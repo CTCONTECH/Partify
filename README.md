@@ -1,68 +1,139 @@
 # Partify
 
-Partify helps mechanics and everyday drivers find the right car part at the best practical cost.
+A mobile-first web application for finding car parts and comparing suppliers across Cape Town, South Africa.
 
-It solves two pain points together:
-- Which nearby stores actually have the part in stock.
-- Which option is truly best once distance and fuel cost are considered.
+## Features
 
-This first version is focused on Cape Town and demonstrates the intended journey:
-1. Enter vehicle details.
-2. Search and select a part (part number or name).
-3. Compare ranked suppliers by distance, stock, and total cost.
+### For Clients (Mechanics & Car Owners)
+- Search for parts by part number or name
+- Vehicle-specific compatibility matching
+- Compare suppliers by:
+  - Stock availability
+  - Distance from your location
+  - Item price
+  - Total cost (item + estimated travel fuel cost)
+- Save search history
+- Price drop notifications
 
-## UX Intent
-
-This is intentionally not a generic template UI. The interface is designed for fast workshop decision-making:
-- Guided step-by-step flow with low cognitive load.
-- Strong visual hierarchy for urgent details (best price, nearest, total cost).
-- Mobile-friendly cards and touch-sized controls.
-- Ranking logic that combines item price, travel distance, and stock reliability.
+### For Suppliers (Auto Parts Stores)
+- Manage inventory and pricing
+- Update stock quantities in real-time
+- Low stock alerts
+- Track sales and customer inquiries
+- Dashboard with business analytics
 
 ## Tech Stack
 
-- Next.js (App Router)
-- TypeScript
-- Tailwind CSS
+- **Next.js 16** - React framework with App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first styling
+- **Lucide React** - Icon library
 
-## Run Locally
+## Getting Started
 
+### Prerequisites
+- Node.js 18+ 
+- npm or pnpm
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/CTCONTECH/Partify.git
+cd Partify
+```
+
+2. Install dependencies:
 ```bash
 npm install
+```
+
+3. Run the development server:
+```bash
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Current Data Model
+## Project Structure
 
-The project currently uses mock data for:
-- Parts catalogue with part numbers and compatibility hints.
-- Supplier inventory with stock and price.
-- Supplier distance and fuel-cost assumptions.
+```
+src/
+├── app/                  # Next.js App Router pages
+│   ├── client/          # Client-facing pages
+│   ├── supplier/        # Supplier-facing pages
+│   ├── login/           # Authentication pages
+│   └── ...
+├── components/          # Reusable React components
+├── data/                # Mock data and utilities
+└── styles/              # Global styles and theme
+```
 
-Core ranking logic is in `src/lib/recommendation.ts`.
+## Design System
 
-## Roadmap
+### Color Palette
+- **Primary**: Deep Orange (#D84315) - Main brand color
+- **Secondary**: Dark Gray (#424242) - Supporting elements
+- **Semantic Colors**:
+  - Available: Green - In stock items
+  - Low Stock: Orange - Low inventory warning
+  - Out of Stock: Red - No inventory
+  - Best Price: Blue - Lowest price indicator
+  - Closest: Purple - Nearest supplier indicator
 
-### Backend and Live Integrations
-- Replace mock data with live supplier feeds.
-- Add supplier onboarding and inventory sync APIs.
-- Add user geolocation and map routes.
+### Components
+- Buttons (Primary, Secondary, Ghost, Destructive)
+- Input fields with icons
+- Search bars
+- Cards (Part, Supplier)
+- Badges for status indicators
+- Navigation (Top bar, Bottom tabs)
+- Segmented controls
 
-### Price Intelligence
-- Add configurable fuel price per liter and consumption profile per vehicle.
-- Improve ranking with weighted preferences (cheapest vs fastest pickup).
+## Features in Detail
 
-### iOS and Android Distribution
-To reach iStore and Play Store, use this path:
-- Keep this Next.js UI as the core product surface.
-- Add authentication, backend APIs, and offline-ready caching.
-- Wrap the web app with Capacitor for iOS and Android builds.
-- Add native capabilities as needed (push notifications, deep links, location permissions).
-- Submit signed binaries through Apple App Store Connect and Google Play Console.
+### Client Journey
+1. Welcome screen with app introduction
+2. Role selection (Client or Supplier)
+3. Account creation
+4. Vehicle setup (make, model, year, engine)
+5. Part search
+6. Supplier comparison with smart sorting
+7. Profile management
 
-## Notes
+### Supplier Journey
+1. Role selection
+2. Account creation
+3. Business dashboard
+4. Inventory management
+5. Price and stock updates
+6. Activity tracking
 
-- This version is an MVP front-end prototype for user flow validation.
-- Cape Town geography and supplier records are currently sample values.
+### Smart Cost Calculation
+The app calculates total cost by combining:
+- Item price at supplier
+- Estimated fuel cost (based on distance × R2.50/km round trip)
+- This helps users make informed decisions about "cheapest" vs "closest" suppliers
+
+## Mock Data
+
+The app includes realistic mock data for:
+- 5 suppliers across Cape Town suburbs
+- 5 common car parts
+- Inventory pricing and stock levels
+- Cape Town-specific locations (Bellville, Parow, Woodstock, Milnerton, Brackenfell)
+
+## Build for Production
+
+```bash
+npm run build
+npm start
+```
+
+## License
+
+Private - CTCONTECH
+
+## Contact
+
+For questions or support, contact: ctconenquiry@gmail.com
