@@ -188,7 +188,7 @@ CREATE POLICY "Admin full access to settlements"
 -- ============================================================================
 
 -- Function to check if user is supplier
-CREATE OR REPLACE FUNCTION auth.is_supplier()
+CREATE OR REPLACE FUNCTION public.is_supplier()
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
     SELECT 1 FROM profiles
@@ -197,7 +197,7 @@ RETURNS BOOLEAN AS $$
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- Function to check if user is admin
-CREATE OR REPLACE FUNCTION auth.is_admin()
+CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
     SELECT 1 FROM profiles

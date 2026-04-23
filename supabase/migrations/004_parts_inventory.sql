@@ -2,7 +2,7 @@
 
 -- Parts catalog
 CREATE TABLE parts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   part_number TEXT UNIQUE NOT NULL,
   part_name TEXT NOT NULL,
   category TEXT NOT NULL,
@@ -28,7 +28,7 @@ ALTER TABLE parts ENABLE ROW LEVEL SECURITY;
 
 -- Supplier inventory
 CREATE TABLE supplier_inventory (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   supplier_id UUID NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
   part_id UUID NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
   price DECIMAL(10,2) NOT NULL CHECK (price >= 0),

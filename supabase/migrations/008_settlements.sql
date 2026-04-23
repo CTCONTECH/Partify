@@ -1,7 +1,7 @@
 -- Supplier Settlement and Billing Tables
 
 CREATE TABLE supplier_monthly_settlements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   supplier_id UUID NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
   settlement_month DATE NOT NULL, -- First day of the month
 
@@ -48,7 +48,7 @@ CREATE TRIGGER update_settlements_updated_at
 
 -- Settlement line items
 CREATE TABLE settlement_line_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   settlement_id UUID NOT NULL REFERENCES supplier_monthly_settlements(id) ON DELETE CASCADE,
   coupon_id UUID NOT NULL REFERENCES coupon_issues(id) ON DELETE CASCADE,
 

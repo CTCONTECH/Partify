@@ -1,7 +1,7 @@
 -- Event Tracking Tables
 
 CREATE TABLE coupon_events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   coupon_id UUID NOT NULL REFERENCES coupon_issues(id) ON DELETE CASCADE,
   event_type event_type NOT NULL,
   actor_id UUID REFERENCES profiles(id) ON DELETE SET NULL, -- User or supplier who triggered event

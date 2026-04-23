@@ -14,69 +14,74 @@ DECLARE
   supplier4_id UUID := '00000000-0000-0000-0000-000000000004';
   supplier5_id UUID := '00000000-0000-0000-0000-000000000005';
 BEGIN
-  -- Insert supplier profiles (in production, these come from auth.users)
-  -- For dev/testing only:
-  INSERT INTO profiles (id, email, role, name, phone) VALUES
-    (supplier1_id, 'autozone@partify.test', 'supplier', 'AutoZone Manager', '+27 21 555 0001'),
-    (supplier2_id, 'midas@partify.test', 'supplier', 'Midas Manager', '+27 21 555 0002'),
-    (supplier3_id, 'capeauto@partify.test', 'supplier', 'Cape Auto Manager', '+27 21 555 0003'),
-    (supplier4_id, 'motorcity@partify.test', 'supplier', 'Motor City Manager', '+27 21 555 0004'),
-    (supplier5_id, 'proauto@partify.test', 'supplier', 'ProAuto Manager', '+27 21 555 0005')
-  ON CONFLICT (id) DO NOTHING;
+  BEGIN
+    -- Insert supplier profiles (in production, these come from auth.users)
+    -- For dev/testing only:
+    INSERT INTO profiles (id, email, role, name, phone) VALUES
+      (supplier1_id, 'autozone@partify.test', 'supplier', 'AutoZone Manager', '+27 21 555 0001'),
+      (supplier2_id, 'midas@partify.test', 'supplier', 'Midas Manager', '+27 21 555 0002'),
+      (supplier3_id, 'capeauto@partify.test', 'supplier', 'Cape Auto Manager', '+27 21 555 0003'),
+      (supplier4_id, 'motorcity@partify.test', 'supplier', 'Motor City Manager', '+27 21 555 0004'),
+      (supplier5_id, 'proauto@partify.test', 'supplier', 'ProAuto Manager', '+27 21 555 0005')
+    ON CONFLICT (id) DO NOTHING;
 
-  -- Insert suppliers with real Cape Town coordinates
-  INSERT INTO suppliers (id, business_name, address, suburb, coordinates, rating, commission_rate, discount_percent) VALUES
-    (
-      supplier1_id,
-      'AutoZone Cape Town',
-      '12 Voortrekker Road, Bellville, Cape Town, 7530',
-      'Bellville',
-      ST_SetSRID(ST_MakePoint(18.6289, -33.8989), 4326)::geography,
-      4.5,
-      10.00,
-      5.00
-    ),
-    (
-      supplier2_id,
-      'Midas Auto Parts',
-      '45 Oude Molen Road, Parow, Cape Town, 7500',
-      'Parow',
-      ST_SetSRID(ST_MakePoint(18.5850, -33.8950), 4326)::geography,
-      4.7,
-      10.00,
-      5.00
-    ),
-    (
-      supplier3_id,
-      'Cape Auto Spares',
-      '78 Victoria Road, Woodstock, Cape Town, 7925',
-      'Woodstock',
-      ST_SetSRID(ST_MakePoint(18.4472, -33.9307), 4326)::geography,
-      4.2,
-      10.00,
-      5.00
-    ),
-    (
-      supplier4_id,
-      'Motor City Parts',
-      '156 Koeberg Road, Milnerton, Cape Town, 7441',
-      'Milnerton',
-      ST_SetSRID(ST_MakePoint(18.5011, -33.8769), 4326)::geography,
-      4.6,
-      10.00,
-      5.00
-    ),
-    (
-      supplier5_id,
-      'ProAuto Supply',
-      '23 Old Paarl Road, Brackenfell, Cape Town, 7560',
-      'Brackenfell',
-      ST_SetSRID(ST_MakePoint(18.6892, -33.8678), 4326)::geography,
-      4.8,
-      10.00,
-      5.00
-    )
-  ON CONFLICT (id) DO NOTHING;
+    -- Insert suppliers with real Cape Town coordinates
+    INSERT INTO suppliers (id, business_name, address, suburb, coordinates, rating, commission_rate, discount_percent) VALUES
+      (
+        supplier1_id,
+        'AutoZone Cape Town',
+        '12 Voortrekker Road, Bellville, Cape Town, 7530',
+        'Bellville',
+        ST_SetSRID(ST_MakePoint(18.6289, -33.8989), 4326)::geography,
+        4.5,
+        10.00,
+        5.00
+      ),
+      (
+        supplier2_id,
+        'Midas Auto Parts',
+        '45 Oude Molen Road, Parow, Cape Town, 7500',
+        'Parow',
+        ST_SetSRID(ST_MakePoint(18.5850, -33.8950), 4326)::geography,
+        4.7,
+        10.00,
+        5.00
+      ),
+      (
+        supplier3_id,
+        'Cape Auto Spares',
+        '78 Victoria Road, Woodstock, Cape Town, 7925',
+        'Woodstock',
+        ST_SetSRID(ST_MakePoint(18.4472, -33.9307), 4326)::geography,
+        4.2,
+        10.00,
+        5.00
+      ),
+      (
+        supplier4_id,
+        'Motor City Parts',
+        '156 Koeberg Road, Milnerton, Cape Town, 7441',
+        'Milnerton',
+        ST_SetSRID(ST_MakePoint(18.5011, -33.8769), 4326)::geography,
+        4.6,
+        10.00,
+        5.00
+      ),
+      (
+        supplier5_id,
+        'ProAuto Supply',
+        '23 Old Paarl Road, Brackenfell, Cape Town, 7560',
+        'Brackenfell',
+        ST_SetSRID(ST_MakePoint(18.6892, -33.8678), 4326)::geography,
+        4.8,
+        10.00,
+        5.00
+      )
+    ON CONFLICT (id) DO NOTHING;
+  EXCEPTION
+    WHEN foreign_key_violation THEN
+      RAISE NOTICE 'Skipping supplier/profile seed rows because placeholder auth.users IDs do not exist.';
+  END;
 END $$;
 
 -- Insert common car parts
@@ -133,6 +138,11 @@ DECLARE
   part4_id UUID;
   part5_id UUID;
 BEGIN
+  IF (SELECT COUNT(*) FROM suppliers WHERE id IN (supplier1_id, supplier2_id, supplier3_id, supplier4_id, supplier5_id)) < 5 THEN
+    RAISE NOTICE 'Skipping inventory seed rows because supplier seed rows are not present in this environment.';
+    RETURN;
+  END IF;
+
   -- Get part IDs
   SELECT id INTO part1_id FROM parts WHERE part_number = 'BP-4567';
   SELECT id INTO part2_id FROM parts WHERE part_number = 'OF-8921';
