@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
-import { TopBar } from '../../components/TopBar';
-import { Button } from '../../components/Button';
-import { Badge } from '../../components/Badge';
-import { mockParts, mockInventory, mockSuppliers } from '../../data/mockData';
-import { createCoupon, formatCouponCode, getCouponTimeRemaining, updateCouponState } from '../../../lib/coupon';
-import { openMapsNavigation } from '../../../lib/geolocation';
-import { Coupon } from '../../../types';
+import { useParams } from 'next/navigation';
+import { TopBar } from '@/components/TopBar';
+import { Button } from '@/components/Button';
+import { mockParts, mockInventory, mockSuppliers } from '@/data/mockData';
+import { createCoupon, formatCouponCode, getCouponTimeRemaining, updateCouponState } from '@/lib/coupon';
+import { openMapsNavigation } from '@/lib/geolocation';
+import { Coupon } from '@/types';
 import { MapPin, Copy, Check, Navigation, Clock, Store, Tag } from 'lucide-react';
 
 export function CouponScreen() {
-  const { supplierId, partId } = useParams<{ supplierId: string; partId: string }>();
-  const navigate = useNavigate();
+  const params = useParams();
+  const supplierId = params.supplierId as string | undefined;
+  const partId = params.partId as string | undefined;
 
   const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [copied, setCopied] = useState(false);

@@ -1,7 +1,7 @@
 // Adapter Factory
 // Returns correct adapter based on config
 
-import { config } from '../config';
+import { isLiveMode } from '../config';
 import {
   PartsRepository,
   SupplierRepository,
@@ -43,7 +43,7 @@ let settlementRepo: SettlementRepository;
 
 export function getPartsRepository(): PartsRepository {
   if (!partsRepo) {
-    partsRepo = config.dataSource === 'live'
+    partsRepo = isLiveMode()
       ? new SupabasePartsRepository()
       : new MockPartsRepository();
   }
@@ -52,7 +52,7 @@ export function getPartsRepository(): PartsRepository {
 
 export function getSupplierRepository(): SupplierRepository {
   if (!supplierRepo) {
-    supplierRepo = config.dataSource === 'live'
+    supplierRepo = isLiveMode()
       ? new SupabaseSupplierRepository()
       : new MockSupplierRepository();
   }
@@ -61,7 +61,7 @@ export function getSupplierRepository(): SupplierRepository {
 
 export function getInventoryRepository(): InventoryRepository {
   if (!inventoryRepo) {
-    inventoryRepo = config.dataSource === 'live'
+    inventoryRepo = isLiveMode()
       ? new SupabaseInventoryRepository()
       : new MockInventoryRepository();
   }
@@ -70,7 +70,7 @@ export function getInventoryRepository(): InventoryRepository {
 
 export function getCouponRepository(): CouponRepository {
   if (!couponRepo) {
-    couponRepo = config.dataSource === 'live'
+    couponRepo = isLiveMode()
       ? new SupabaseCouponRepository()
       : new MockCouponRepository();
   }
@@ -79,7 +79,7 @@ export function getCouponRepository(): CouponRepository {
 
 export function getVehicleRepository(): VehicleRepository {
   if (!vehicleRepo) {
-    vehicleRepo = config.dataSource === 'live'
+    vehicleRepo = isLiveMode()
       ? new SupabaseVehicleRepository()
       : new MockVehicleRepository();
   }
@@ -88,7 +88,7 @@ export function getVehicleRepository(): VehicleRepository {
 
 export function getEventRepository(): EventRepository {
   if (!eventRepo) {
-    eventRepo = config.dataSource === 'live'
+    eventRepo = isLiveMode()
       ? new SupabaseEventRepository()
       : new MockEventRepository();
   }
@@ -97,7 +97,7 @@ export function getEventRepository(): EventRepository {
 
 export function getSettlementRepository(): SettlementRepository {
   if (!settlementRepo) {
-    settlementRepo = config.dataSource === 'live'
+    settlementRepo = isLiveMode()
       ? new SupabaseSettlementRepository()
       : new MockSettlementRepository();
   }

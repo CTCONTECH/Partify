@@ -1,25 +1,29 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router';
-import { TopBar } from '../../components/TopBar';
-import { SupplierCard } from '../../components/SupplierCard';
-import { SegmentedControl } from '../../components/SegmentedControl';
-import { Button } from '../../components/Button';
-import { getSupplierResults, mockParts } from '../../data/mockData';
-import { useGeolocation } from '../../../hooks/useGeolocation';
+import { useParams, useRouter } from 'next/navigation';
+import { TopBar } from '@/components/TopBar';
+import { SupplierCard } from '@/components/SupplierCard';
+import { SegmentedControl } from '@/components/SegmentedControl';
+import { Button } from '@/components/Button';
+import { getSupplierResults, mockParts } from '@/data/mockData';
+import { useGeolocation } from '@/hooks/useGeolocation';
 import { SlidersHorizontal, MapPin, Loader2 } from 'lucide-react';
 
 export function SupplierResults() {
-  const { partId } = useParams<{ partId: string }>();
-  const navigate = useNavigate();
+  const params = useParams();
+  const router = useRouter();
+  const partId = params.partId as string | undefined;
   const [sortBy, setSortBy] = useState<'total' | 'price' | 'distance'>('total');
 
   const { location, error, loading, requestLocation } = useGeolocation();
-  const [showLocationPrompt, setShowLocationPrompt] = useState(!location);
+  const showLocationPrompt = !location;
 
-  if (!partId) {
-    navigate('/client/search');
-    return null;
-  }
+  useEffect(() => {
+    if (!partId) {
+      router.replace('/client/search');
+    }
+  }, [partId, router]);
+
+  if (!partId) return null;
 
   const part = mockParts.find(p => p.id === partId);
   const suppliers = getSupplierResults(partId, location || undefined);
@@ -30,14 +34,8 @@ export function SupplierResults() {
     return a.distance - b.distance;
   });
 
-  useEffect(() => {
-    if (location) {
-      setShowLocationPrompt(false);
-    }
-  }, [location]);
-
   const handleSupplierClick = (supplierId: string) => {
-    navigate(`/client/coupon/${supplierId}/${partId}`);
+    router.push(`/client/coupon/${supplierId}/${partId}`);
   };
 
   return (

@@ -78,7 +78,7 @@ export class SupabaseSupplierRepository implements SupplierRepository {
     partId?: string,
     maxDistanceKm: number = 50
   ): Promise<Supplier[]> {
-    const { data, error } = await supabase.rpc('find_nearest_suppliers', {
+    const { data, error } = await (supabase as any).rpc('find_nearest_suppliers', {
       user_lat: location.lat,
       user_lon: location.lon,
       part_id_filter: partId || null,
@@ -87,7 +87,7 @@ export class SupabaseSupplierRepository implements SupplierRepository {
     });
 
     if (error) throw error;
-    return data?.map(s => ({
+    return data?.map((s: any) => ({
       id: s.supplier_id,
       name: s.business_name,
       location: s.suburb,
@@ -124,7 +124,7 @@ export class SupabaseSupplierRepository implements SupplierRepository {
 
 export class SupabaseInventoryRepository implements InventoryRepository {
   async getPartAvailability(partId: string, userLocation?: Location): Promise<SupplierResult[]> {
-    const { data, error } = await supabase.rpc('get_part_availability', {
+    const { data, error } = await (supabase as any).rpc('get_part_availability', {
       part_id_filter: partId,
       user_lat: userLocation?.lat || null,
       user_lon: userLocation?.lon || null,
@@ -132,7 +132,7 @@ export class SupabaseInventoryRepository implements InventoryRepository {
 
     if (error) throw error;
 
-    const results = (data || []).map(item => ({
+    const results: SupplierResult[] = (data || []).map((item: any) => ({
       id: item.supplier_id,
       name: item.business_name,
       location: item.suburb,
@@ -149,11 +149,11 @@ export class SupabaseInventoryRepository implements InventoryRepository {
 
     // Add best flags
     if (results.length > 0) {
-      const minPrice = Math.min(...results.map(r => r.itemPrice));
-      const minDistance = Math.min(...results.map(r => r.distance));
-      const minTotal = Math.min(...results.map(r => r.totalCost));
+      const minPrice = Math.min(...results.map((r: SupplierResult) => r.itemPrice));
+      const minDistance = Math.min(...results.map((r: SupplierResult) => r.distance));
+      const minTotal = Math.min(...results.map((r: SupplierResult) => r.totalCost));
 
-      results.forEach(r => {
+      results.forEach((r: SupplierResult) => {
         r.isBestPrice = r.itemPrice === minPrice;
         r.isClosest = r.distance === minDistance;
         r.isBestTotal = r.totalCost === minTotal;
@@ -200,7 +200,7 @@ export class SupabaseCouponRepository implements CouponRepository {
     price: number,
     userLocation?: Location
   ): Promise<Coupon> {
-    const { data, error } = await supabase.rpc('issue_coupon', {
+    const { data, error } = await (supabase as any).rpc('issue_coupon', {
       p_user_id: userId,
       p_supplier_id: supplierId,
       p_part_id: partId,
@@ -248,7 +248,7 @@ export class SupabaseCouponRepository implements CouponRepository {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(d => this.transformCoupon(d));
+    return (data || []).map((d: any) => this.transformCoupon(d));
   }
 
   async updateCouponState(couponId: string, newState: CouponState, actorId?: string): Promise<void> {
@@ -272,12 +272,12 @@ export class SupabaseCouponRepository implements CouponRepository {
         actual_order_amount: orderAmount,
       })
       .eq('id', couponId)
-      .eq('status', ['issued', 'opened', 'navigation_started']);
+      .in('status', ['issued', 'opened', 'navigation_started']);
 
     if (error) throw error;
 
     // Log event
-    await supabase.rpc('log_coupon_event', {
+    await (supabase as any).rpc('log_coupon_event', {
       p_coupon_id: couponId,
       p_event_type: 'coupon_redeemed',
       p_actor_id: redeemedBy,
@@ -352,7 +352,7 @@ export class SupabaseEventRepository implements EventRepository {
     actorId?: string,
     metadata?: any
   ): Promise<void> {
-    const { error } = await supabase.rpc('log_coupon_event', {
+    const { error } = await (supabase as any).rpc('log_coupon_event', {
       p_coupon_id: couponId,
       p_event_type: eventType,
       p_actor_id: actorId || null,
@@ -365,7 +365,7 @@ export class SupabaseEventRepository implements EventRepository {
 
 export class SupabaseSettlementRepository implements SettlementRepository {
   async generateMonthlySettlement(supplierId: string, year: number, month: number): Promise<string> {
-    const { data, error } = await supabase.rpc('generate_monthly_settlement', {
+    const { data, error } = await (supabase as any).rpc('generate_monthly_settlement', {
       p_supplier_id: supplierId,
       p_year: year,
       p_month: month,

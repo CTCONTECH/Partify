@@ -10,7 +10,7 @@ import {
   EventRepository,
   SettlementRepository,
 } from '../repositories/types';
-import { mockParts, mockSuppliers, mockInventory } from '@/app/data/mockData';
+import { mockParts, mockSuppliers, mockInventory } from '@/data/mockData';
 import { createCoupon, updateCouponState as updateCouponStateUtil } from '../coupon';
 import { calculateDistance, calculateFuelCost } from '../geolocation';
 import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState } from '@/types';
