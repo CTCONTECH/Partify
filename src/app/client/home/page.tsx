@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
@@ -8,14 +9,18 @@ import { Search, Car, History, TrendingUp } from 'lucide-react';
 
 export default function ClientHome() {
   const router = useRouter();
-  const vehicle = typeof window !== 'undefined' ? localStorage.getItem('userVehicle') : null;
+  const [vehicle, setVehicle] = useState<string | null>(null);
+
+  useEffect(() => {
+    setVehicle(localStorage.getItem('userVehicle'));
+  }, []);
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Partify" showNotifications />
+      <TopBar showLogo showNotifications />
 
       <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-gradient-to-br from-[var(--primary)] to-[#BF360C] rounded-3xl p-6 mb-6 text-white">
+        <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white">
           <h2 className="text-2xl mb-2">Find your part</h2>
           <p className="text-white/90 mb-6">Compare prices across Cape Town suppliers</p>
           <Button

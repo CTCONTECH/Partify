@@ -1,14 +1,11 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Badge } from '@/components/Badge';
 import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
 
 export default function SupplierDashboard() {
-  const router = useRouter();
-
   const stats = [
     { label: 'Total Parts', value: '1,245', icon: Package, color: 'bg-blue-500' },
     { label: 'Revenue (This Month)', value: 'R 45,230', icon: DollarSign, color: 'bg-green-500' },
@@ -24,12 +21,12 @@ export default function SupplierDashboard() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Dashboard" showNotifications />
+      <TopBar showLogo showNotifications />
 
       <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-gradient-to-br from-[var(--secondary)] to-[#212121] rounded-3xl p-6 mb-6 text-white">
+        <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white">
           <h2 className="text-2xl mb-2">ProAuto Supply</h2>
-          <p className="text-white/80 mb-4">Brackenfell, Cape Town</p>
+          <p className="text-white/90 mb-4">Brackenfell, Cape Town</p>
           <div className="flex items-center gap-2">
             <Badge variant="default" size="sm">
               <span className="text-white">Active Supplier</span>
