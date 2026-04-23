@@ -1,28 +1,26 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
-import { TopBar } from '@/components/TopBar';
-import { BottomNav } from '@/components/BottomNav';
-import { Button } from '@/components/Button';
+import { useNavigate } from 'react-router';
+import { TopBar } from '../../components/TopBar';
+import { BottomNav } from '../../components/BottomNav';
+import { Button } from '../../components/Button';
 import { Search, Car, History, TrendingUp } from 'lucide-react';
 
-export default function ClientHome() {
-  const router = useRouter();
-  const vehicle = typeof window !== 'undefined' ? localStorage.getItem('userVehicle') : null;
+export function ClientHome() {
+  const navigate = useNavigate();
+  const vehicle = localStorage.getItem('userVehicle');
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Partify" showNotifications />
+      <TopBar showLogo showNotifications />
 
       <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-gradient-to-br from-[var(--primary)] to-[#BF360C] rounded-3xl p-6 mb-6 text-white">
+        <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white">
           <h2 className="text-2xl mb-2">Find your part</h2>
           <p className="text-white/90 mb-6">Compare prices across Cape Town suppliers</p>
           <Button
             variant="secondary"
             size="lg"
             fullWidth
-            onClick={() => router.push('/client/search')}
+            onClick={() => navigate('/client/search')}
           >
             <Search className="w-5 h-5 mr-2" />
             Search Parts
@@ -42,7 +40,7 @@ export default function ClientHome() {
                 </div>
               </div>
               <button
-                onClick={() => router.push('/client/vehicle-setup')}
+                onClick={() => navigate('/client/vehicle-setup')}
                 className="text-sm text-[var(--primary)] underline"
               >
                 Change
@@ -61,7 +59,7 @@ export default function ClientHome() {
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => router.push('/client/vehicle-setup')}
+                  onClick={() => navigate('/client/vehicle-setup')}
                 >
                   Add Vehicle
                 </Button>
@@ -73,7 +71,7 @@ export default function ClientHome() {
         <h3 className="text-lg mb-4">Quick Actions</h3>
         <div className="space-y-3">
           <button
-            onClick={() => router.push('/client/saved')}
+            onClick={() => navigate('/client/saved')}
             className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">
@@ -86,7 +84,7 @@ export default function ClientHome() {
           </button>
 
           <button
-            onClick={() => router.push('/client/search')}
+            onClick={() => navigate('/client/search')}
             className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">

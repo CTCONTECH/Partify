@@ -1,31 +1,27 @@
-'use client';
-
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/Button';
-import { Input } from '@/components/Input';
-import { Mail, Lock, Wrench } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Button } from '../components/Button';
+import { Input } from '../components/Input';
+import { PartifyLogo } from '../components/PartifyLogo';
+import { Mail, Lock } from 'lucide-react';
 
-export default function Login() {
-  const router = useRouter();
+export function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('hasAccount', 'true');
     const role = localStorage.getItem('userRole') || 'client';
     const destination = role === 'client' ? '/client/home' : '/supplier/dashboard';
-    router.push(destination);
+    navigate(destination);
   };
 
   return (
     <div className="min-h-screen bg-[var(--background)] flex flex-col">
       <div className="flex-1 flex flex-col justify-center p-6 max-w-md mx-auto w-full">
         <div className="flex items-center justify-center mb-8">
-          <div className="bg-[var(--primary)] p-4 rounded-2xl">
-            <Wrench className="w-10 h-10 text-white" />
-          </div>
+          <PartifyLogo variant="icon" size="lg" />
         </div>
 
         <h1 className="text-2xl text-center mb-2">Welcome back</h1>
@@ -56,7 +52,7 @@ export default function Login() {
 
           <button
             type="button"
-            onClick={() => router.push('/forgot-password')}
+            onClick={() => navigate('/forgot-password')}
             className="text-sm text-[var(--primary)] underline"
           >
             Forgot password?
@@ -70,7 +66,7 @@ export default function Login() {
         <div className="text-center">
           <span className="text-[var(--muted-foreground)]">Don't have an account? </span>
           <button
-            onClick={() => router.push('/role-select')}
+            onClick={() => navigate('/role-select')}
             className="text-[var(--primary)] underline"
           >
             Sign up
