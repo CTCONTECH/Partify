@@ -57,6 +57,7 @@ export default function SupplierResults() {
             <SupplierCard
               key={supplier.id}
               supplier={supplier}
+              onClick={() => router.push(`/client/coupon/${supplier.id}/${partId}`)}
             />
           ))}
         </div>
