@@ -48,6 +48,7 @@ export function PartifyLogo({
   };
 
   const colors = getColors();
+  const iconDetailColor = theme === 'white' ? '#FF5722' : '#FFFFFF';
 
   // Icon Only - P-Pin Mark
   if (variant === 'icon') {
@@ -75,11 +76,11 @@ export function PartifyLogo({
         {/* "P" Letter Inside */}
         <path
           d="M42 28 L50 28 C56 28, 60 32, 60 38 C60 44, 56 48, 50 48 L45 48 L45 58 L42 58 Z M45 31 L45 45 L50 45 C54 45, 57 42, 57 38 C57 34, 54 31, 50 31 Z"
-          fill="white"
+          fill={iconDetailColor}
         />
 
         {/* Center Dot */}
-        <circle cx="50" cy="70" r="3" fill="white" />
+        <circle cx="50" cy="70" r="3" fill={iconDetailColor} />
       </svg>
     );
   }
@@ -106,9 +107,9 @@ export function PartifyLogo({
           />
           <path
             d="M42 28 L50 28 C56 28, 60 32, 60 38 C60 44, 56 48, 50 48 L45 48 L45 58 L42 58 Z M45 31 L45 45 L50 45 C54 45, 57 42, 57 38 C57 34, 54 31, 50 31 Z"
-            fill="white"
+            fill={iconDetailColor}
           />
-          <circle cx="50" cy="70" r="3" fill="white" />
+          <circle cx="50" cy="70" r="3" fill={iconDetailColor} />
         </svg>
 
         <span
@@ -145,9 +146,9 @@ export function PartifyLogo({
         />
         <path
           d="M42 28 L50 28 C56 28, 60 32, 60 38 C60 44, 56 48, 50 48 L45 48 L45 58 L42 58 Z M45 31 L45 45 L50 45 C54 45, 57 42, 57 38 C57 34, 54 31, 50 31 Z"
-          fill="white"
+          fill={iconDetailColor}
         />
-        <circle cx="50" cy="70" r="3" fill="white" />
+        <circle cx="50" cy="70" r="3" fill={iconDetailColor} />
       </svg>
 
       <span

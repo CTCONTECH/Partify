@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../styles/globals.css';
+import '../styles/theme.css';
 
 export const metadata: Metadata = {
   title: 'Partify - Find Car Parts in Cape Town',

@@ -28,9 +28,7 @@ export default function SupplierDashboard() {
           <h2 className="text-2xl mb-2">ProAuto Supply</h2>
           <p className="text-white/90 mb-4">Brackenfell, Cape Town</p>
           <div className="flex items-center gap-2">
-            <Badge variant="default" size="sm">
-              <span className="text-white">Active Supplier</span>
-            </Badge>
+            <Badge variant="default" size="sm">Active Supplier</Badge>
           </div>
         </div>
 
