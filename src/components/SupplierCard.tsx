@@ -1,4 +1,4 @@
-import { MapPin, Package } from 'lucide-react';
+import { MapPin, Package, Tag } from 'lucide-react';
 import { Badge } from './Badge';
 
 interface SupplierCardProps {
@@ -48,14 +48,21 @@ export function SupplierCard({ supplier, onClick }: SupplierCardProps) {
         </Badge>
       </div>
 
-      <div className="flex items-end justify-between pt-3 border-t border-[var(--border)]">
-        <div>
-          <p className="text-xs text-[var(--muted-foreground)] mb-1">Item price</p>
-          <p className="text-lg">R {supplier.itemPrice.toFixed(2)}</p>
+      <div className="pt-3 border-t border-[var(--border)] space-y-3">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-xs text-[var(--muted-foreground)] mb-1">Item price</p>
+            <p className="text-lg">R {supplier.itemPrice.toFixed(2)}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-[var(--muted-foreground)] mb-1">+ Fuel: R {supplier.fuelCost.toFixed(2)}</p>
+            <p className="text-xl text-[var(--primary)]">R {supplier.totalCost.toFixed(2)}</p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-[var(--muted-foreground)] mb-1">+ Fuel: R {supplier.fuelCost.toFixed(2)}</p>
-          <p className="text-xl text-[var(--primary)]">R {supplier.totalCost.toFixed(2)}</p>
+
+        <div className="w-full bg-[var(--primary)] text-white rounded-xl px-4 py-2 text-sm flex items-center justify-center gap-2 pointer-events-none">
+          <Tag className="w-4 h-4" />
+          <span>Get Coupon</span>
         </div>
       </div>
     </button>
