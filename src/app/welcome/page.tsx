@@ -2,7 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
-import { Wrench, Search, TrendingDown, MapPin } from 'lucide-react';
+import { PartifyLogo } from '@/components/PartifyLogo';
+import { Search, TrendingDown, MapPin } from 'lucide-react';
 
 export default function Welcome() {
   const router = useRouter();
@@ -15,8 +16,8 @@ export default function Welcome() {
   return (
     <div className="h-screen bg-[var(--background)] flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="bg-[var(--primary)] p-6 rounded-3xl mb-6">
-          <Wrench className="w-16 h-16 text-white" />
+        <div className="mb-6">
+          <PartifyLogo variant="icon" size="lg" />
         </div>
 
         <h1 className="text-3xl text-center mb-3">Welcome to Partify</h1>
