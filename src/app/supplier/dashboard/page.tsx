@@ -1,12 +1,11 @@
-import { useNavigate } from 'react-router';
-import { TopBar } from '../../components/TopBar';
-import { BottomNav } from '../../components/BottomNav';
-import { Badge } from '../../components/Badge';
+"use client";
+
+import { TopBar } from '@/components/TopBar';
+import { BottomNav } from '@/components/BottomNav';
+import { Badge } from '@/components/Badge';
 import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
 
-export function SupplierDashboard() {
-  const navigate = useNavigate();
-
+export default function SupplierDashboard() {
   const stats = [
     { label: 'Total Parts', value: '1,245', icon: Package, color: 'bg-blue-500' },
     { label: 'Revenue (This Month)', value: 'R 45,230', icon: DollarSign, color: 'bg-green-500' },

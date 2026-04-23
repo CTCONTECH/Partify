@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Wrench } from 'lucide-react';
+import { PartifyLogo } from '@/components/PartifyLogo';
 
 export default function Splash() {
   const router = useRouter();
@@ -18,10 +18,9 @@ export default function Splash() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-[var(--primary)] to-[#BF360C] flex flex-col items-center justify-center p-6">
-      <div className="bg-white/10 p-6 rounded-3xl mb-6 backdrop-blur-sm">
-        <Wrench className="w-20 h-20 text-white" />
+      <div className="mb-6">
+        <PartifyLogo variant="stacked" size="xl" theme="white" />
       </div>
-      <h1 className="text-4xl text-white mb-2">Partify</h1>
       <p className="text-white/80 text-lg">Find parts. Compare prices.</p>
     </div>
   );

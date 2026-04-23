@@ -1,5 +1,7 @@
+"use client";
+
 import { ArrowLeft, Bell } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useRouter } from 'next/navigation';
 import { PartifyLogo } from './PartifyLogo';
 
 interface TopBarProps {
@@ -17,13 +19,13 @@ export function TopBar({
   showLogo = false,
   onBack
 }: TopBarProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const handleBack = () => {
     if (onBack) {
       onBack();
     } else {
-      navigate(-1);
+      router.back();
     }
   };
 
@@ -48,7 +50,7 @@ export function TopBar({
         </div>
         {showNotifications && (
           <button
-            onClick={() => navigate('/notifications')}
+            onClick={() => router.push('/notifications')}
             className="p-2 text-[var(--text-primary)] hover:text-[var(--primary)] active:scale-95 transition-all rounded-lg hover:bg-[var(--muted)]"
             aria-label="Notifications"
           >

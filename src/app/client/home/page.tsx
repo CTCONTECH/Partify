@@ -1,12 +1,19 @@
-import { useNavigate } from 'react-router';
-import { TopBar } from '../../components/TopBar';
-import { BottomNav } from '../../components/BottomNav';
-import { Button } from '../../components/Button';
+"use client";
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { TopBar } from '@/components/TopBar';
+import { BottomNav } from '@/components/BottomNav';
+import { Button } from '@/components/Button';
 import { Search, Car, History, TrendingUp } from 'lucide-react';
 
-export function ClientHome() {
-  const navigate = useNavigate();
-  const vehicle = localStorage.getItem('userVehicle');
+export default function ClientHome() {
+  const router = useRouter();
+  const [vehicle, setVehicle] = useState<string | null>(null);
+
+  useEffect(() => {
+    setVehicle(localStorage.getItem('userVehicle'));
+  }, []);
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
@@ -20,7 +27,7 @@ export function ClientHome() {
             variant="secondary"
             size="lg"
             fullWidth
-            onClick={() => navigate('/client/search')}
+            onClick={() => router.push('/client/search')}
           >
             <Search className="w-5 h-5 mr-2" />
             Search Parts
@@ -40,7 +47,7 @@ export function ClientHome() {
                 </div>
               </div>
               <button
-                onClick={() => navigate('/client/vehicle-setup')}
+                onClick={() => router.push('/client/vehicle-setup')}
                 className="text-sm text-[var(--primary)] underline"
               >
                 Change
@@ -59,7 +66,7 @@ export function ClientHome() {
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => navigate('/client/vehicle-setup')}
+                  onClick={() => router.push('/client/vehicle-setup')}
                 >
                   Add Vehicle
                 </Button>
@@ -71,7 +78,7 @@ export function ClientHome() {
         <h3 className="text-lg mb-4">Quick Actions</h3>
         <div className="space-y-3">
           <button
-            onClick={() => navigate('/client/saved')}
+            onClick={() => router.push('/client/saved')}
             className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">
@@ -84,7 +91,7 @@ export function ClientHome() {
           </button>
 
           <button
-            onClick={() => navigate('/client/search')}
+            onClick={() => router.push('/client/search')}
             className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">

@@ -1,12 +1,14 @@
+"use client";
+
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
-import { PartifyLogo } from '../components/PartifyLogo';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/Button';
+import { Input } from '@/components/Input';
+import { PartifyLogo } from '@/components/PartifyLogo';
 import { Mail, Lock } from 'lucide-react';
 
-export function Login() {
-  const navigate = useNavigate();
+export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -14,7 +16,7 @@ export function Login() {
     e.preventDefault();
     const role = localStorage.getItem('userRole') || 'client';
     const destination = role === 'client' ? '/client/home' : '/supplier/dashboard';
-    navigate(destination);
+    router.push(destination);
   };
 
   return (
@@ -52,7 +54,7 @@ export function Login() {
 
           <button
             type="button"
-            onClick={() => navigate('/forgot-password')}
+            onClick={() => router.push('/forgot-password')}
             className="text-sm text-[var(--primary)] underline"
           >
             Forgot password?
@@ -66,7 +68,7 @@ export function Login() {
         <div className="text-center">
           <span className="text-[var(--muted-foreground)]">Don't have an account? </span>
           <button
-            onClick={() => navigate('/role-select')}
+            onClick={() => router.push('/role-select')}
             className="text-[var(--primary)] underline"
           >
             Sign up
