@@ -11,7 +11,8 @@ export const mockSuppliers = [
     id: 's1',
     name: 'AutoZone Cape Town',
     location: 'Bellville',
-    distance: 3.2,
+    address: '12 Voortrekker Road, Bellville, Cape Town, 7530',
+    coordinates: { lat: -33.8989, lon: 18.6289 },
     rating: 4.5,
     totalParts: 850
   },
@@ -19,7 +20,8 @@ export const mockSuppliers = [
     id: 's2',
     name: 'Midas Auto Parts',
     location: 'Parow',
-    distance: 5.1,
+    address: '45 Oude Molen Road, Parow, Cape Town, 7500',
+    coordinates: { lat: -33.8950, lon: 18.5850 },
     rating: 4.7,
     totalParts: 1200
   },
@@ -27,7 +29,8 @@ export const mockSuppliers = [
     id: 's3',
     name: 'Cape Auto Spares',
     location: 'Woodstock',
-    distance: 8.3,
+    address: '78 Victoria Road, Woodstock, Cape Town, 7925',
+    coordinates: { lat: -33.9307, lon: 18.4472 },
     rating: 4.2,
     totalParts: 650
   },
@@ -35,7 +38,8 @@ export const mockSuppliers = [
     id: 's4',
     name: 'Motor City Parts',
     location: 'Milnerton',
-    distance: 12.5,
+    address: '156 Koeberg Road, Milnerton, Cape Town, 7441',
+    coordinates: { lat: -33.8769, lon: 18.5011 },
     rating: 4.6,
     totalParts: 920
   },
@@ -43,7 +47,8 @@ export const mockSuppliers = [
     id: 's5',
     name: 'ProAuto Supply',
     location: 'Brackenfell',
-    distance: 2.8,
+    address: '23 Old Paarl Road, Brackenfell, Cape Town, 7560',
+    coordinates: { lat: -33.8678, lon: 18.6892 },
     rating: 4.8,
     totalParts: 1500
   }
@@ -157,7 +162,7 @@ export function calculateFuelCost(distance: number): number {
   return Math.round(distance * fuelPricePerKm * 2 * 100) / 100;
 }
 
-export function getSupplierResults(partId: string) {
+export function getSupplierResults(partId: string, userLocation?: { lat: number; lon: number }) {
   const part = mockParts.find(p => p.id === partId);
   if (!part) return [];
 
@@ -167,14 +172,22 @@ export function getSupplierResults(partId: string) {
     const supplier = mockSuppliers.find(s => s.id === inv.supplierId);
     if (!supplier) return null;
 
-    const fuelCost = calculateFuelCost(supplier.distance);
+    // Calculate actual distance if user location provided
+    let distance = 5.0; // Default fallback
+    if (userLocation) {
+      distance = calculateDistance(userLocation, supplier.coordinates);
+    }
+
+    const fuelCost = calculateFuelCost(distance);
     const totalCost = inv.price + fuelCost;
 
     return {
       id: supplier.id,
       name: supplier.name,
       location: supplier.location,
-      distance: supplier.distance,
+      address: supplier.address,
+      coordinates: supplier.coordinates,
+      distance,
       itemPrice: inv.price,
       fuelCost,
       totalCost,
@@ -194,4 +207,24 @@ export function getSupplierResults(partId: string) {
     isClosest: result!.distance === minDistance,
     isBestTotal: result!.totalCost === minTotal
   }));
+}
+
+function calculateDistance(from: { lat: number; lon: number }, to: { lat: number; lon: number }): number {
+  const R = 6371;
+  const dLat = toRad(to.lat - from.lat);
+  const dLon = toRad(to.lon - from.lon);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(from.lat)) * Math.cos(toRad(to.lat)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c;
+
+  return Math.round(distance * 10) / 10;
+}
+
+function toRad(degrees: number): number {
+  return degrees * (Math.PI / 180);
 }
