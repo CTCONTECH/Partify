@@ -13,6 +13,7 @@ export default function Login() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    localStorage.setItem('hasAccount', 'true');
     const role = localStorage.getItem('userRole') || 'client';
     const destination = role === 'client' ? '/client/home' : '/supplier/dashboard';
     router.push(destination);

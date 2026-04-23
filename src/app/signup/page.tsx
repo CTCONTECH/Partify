@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 
-export default function Signup() {
+export const dynamic = 'force-dynamic';
+
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const role = searchParams.get('role') || 'client';
@@ -22,6 +24,8 @@ export default function Signup() {
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('userRole', role);
+    localStorage.setItem('hasAccount', 'true');
+    localStorage.setItem('hasSeenWelcome', 'true');
     const destination = role === 'client' ? '/client/vehicle-setup' : '/supplier/dashboard';
     router.push(destination);
   };
@@ -108,5 +112,13 @@ export default function Signup() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--background)]" />}>
+      <SignupForm />
+    </Suspense>
   );
 }

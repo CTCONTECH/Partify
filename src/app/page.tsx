@@ -9,12 +9,8 @@ export default function Splash() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
-      if (hasSeenWelcome) {
-        router.push('/login');
-      } else {
-        router.push('/welcome');
-      }
+      const hasAccount = localStorage.getItem('hasAccount') === 'true';
+      router.push(hasAccount ? '/login' : '/welcome');
     }, 2000);
 
     return () => clearTimeout(timer);

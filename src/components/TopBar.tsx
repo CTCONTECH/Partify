@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, Bell } from 'lucide-react';
-import { useNavigate } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 interface TopBarProps {
   title?: string;
@@ -11,13 +11,13 @@ interface TopBarProps {
 }
 
 export function TopBar({ title, showBack, showNotifications, onBack }: TopBarProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const handleBack = () => {
     if (onBack) {
       onBack();
     } else {
-      navigate(-1);
+      router.back();
     }
   };
 
@@ -39,7 +39,7 @@ export function TopBar({ title, showBack, showNotifications, onBack }: TopBarPro
         </div>
         {showNotifications && (
           <button
-            onClick={() => navigate('/notifications')}
+            onClick={() => router.push('/notifications')}
             className="p-2 -mr-2 text-[var(--foreground)] active:text-[var(--primary)]"
           >
             <Bell className="w-6 h-6" />
