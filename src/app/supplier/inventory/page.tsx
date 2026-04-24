@@ -57,7 +57,10 @@ export default function SupplierInventory() {
             >
               Import CSV
             </button>
-            <button className="text-sm text-[var(--primary)] underline">
+            <button
+              onClick={() => router.push('/supplier/add-part')}
+              className="text-sm text-[var(--primary)] underline"
+            >
               Add Part
             </button>
           </div>
