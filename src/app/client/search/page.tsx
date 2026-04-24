@@ -1,30 +1,67 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { SearchBar } from '@/components/SearchBar';
 import { PartCard } from '@/components/PartCard';
 import { mockParts, mockInventory } from '@/data/mockData';
+import { partsService } from '@/lib/services/parts-service';
+import { isLiveMode } from '@/lib/config';
+import { Part } from '@/types';
 
 export default function PartSearch() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredParts, setFilteredParts] = useState(mockParts);
+  const [filteredParts, setFilteredParts] = useState<Part[]>(mockParts);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSearch = (query: string) => {
+  useEffect(() => {
+    if (!isLiveMode()) return;
+
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const parts = await partsService.searchParts('');
+        setFilteredParts(parts);
+      } catch {
+        setFilteredParts(mockParts);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
+
+    if (isLiveMode()) {
+      setIsLoading(true);
+      try {
+        const parts = await partsService.searchParts(query);
+        setFilteredParts(parts);
+      } catch {
+        setFilteredParts([]);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
     if (query.trim() === '') {
       setFilteredParts(mockParts);
-    } else {
-      const filtered = mockParts.filter(part =>
-        part.partName.toLowerCase().includes(query.toLowerCase()) ||
-        part.partNumber.toLowerCase().includes(query.toLowerCase()) ||
-        part.category.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredParts(filtered);
+      return;
     }
+
+    const filtered = mockParts.filter(part =>
+      part.partName.toLowerCase().includes(query.toLowerCase()) ||
+      part.partNumber.toLowerCase().includes(query.toLowerCase()) ||
+      part.category.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredParts(filtered);
   };
 
   const getPartStats = (partId: string) => {
@@ -58,6 +95,10 @@ export default function PartSearch() {
           <p className="text-sm text-[var(--muted-foreground)] mb-4">
             {filteredParts.length} {filteredParts.length === 1 ? 'result' : 'results'} found
           </p>
+        )}
+
+        {isLoading && (
+          <p className="text-sm text-[var(--muted-foreground)] mb-4">Searching parts...</p>
         )}
 
         <div className="space-y-3">

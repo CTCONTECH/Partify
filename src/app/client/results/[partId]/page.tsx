@@ -1,21 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { SupplierCard } from '@/components/SupplierCard';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { getSupplierResults, mockParts } from '@/data/mockData';
 import { SlidersHorizontal } from 'lucide-react';
+import { partsService } from '@/lib/services/parts-service';
+import { isLiveMode } from '@/lib/config';
+import { Part, SupplierResult } from '@/types';
 
 export default function SupplierResults() {
   const params = useParams();
   const router = useRouter();
   const partId = params.partId as string;
   const [sortBy, setSortBy] = useState<'total' | 'price' | 'distance'>('total');
+  const [part, setPart] = useState<Part | null>(mockParts.find(p => p.id === partId) || null);
+  const [suppliers, setSuppliers] = useState<SupplierResult[]>(getSupplierResults(partId));
 
-  const part = mockParts.find(p => p.id === partId);
-  const suppliers = getSupplierResults(partId);
+  useEffect(() => {
+    if (!isLiveMode()) return;
+
+    const load = async () => {
+      try {
+        const [partData, availability] = await Promise.all([
+          partsService.getPartById(partId),
+          partsService.getPartAvailability(partId),
+        ]);
+
+        setPart(partData);
+        setSuppliers(availability);
+      } catch {
+        setPart(mockParts.find(p => p.id === partId) || null);
+        setSuppliers(getSupplierResults(partId));
+      }
+    };
+
+    load();
+  }, [partId]);
 
   const sortedSuppliers = [...suppliers].sort((a, b) => {
     if (sortBy === 'total') return a.totalCost - b.totalCost;

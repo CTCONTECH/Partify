@@ -15,17 +15,73 @@ import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, Coupon
 
 const supabase = createClient();
 
+function normalizePartNumber(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function toPart(row: any): Part {
+  const compatibility = Array.isArray(row.compatibility)
+    ? row.compatibility.join(', ')
+    : (row.compatibility || '');
+
+  return {
+    id: row.id,
+    partNumber: row.part_number,
+    partName: row.part_name,
+    category: row.category,
+    compatibility,
+    description: row.description || '',
+  };
+}
+
 export class SupabasePartsRepository implements PartsRepository {
   async searchParts(query: string): Promise<Part[]> {
-    let queryBuilder = supabase.from('parts').select('*');
-
-    if (query.trim()) {
-      queryBuilder = queryBuilder.or(`part_name.ilike.%${query}%,part_number.ilike.%${query}%,category.ilike.%${query}%`);
+    const trimmed = query.trim();
+    if (!trimmed) {
+      const { data, error } = await supabase.from('parts').select('*');
+      if (error) throw error;
+      return (data || []).map((row: any) => toPart(row));
     }
 
-    const { data, error } = await queryBuilder;
-    if (error) throw error;
-    return data || [];
+    const normalized = normalizePartNumber(trimmed);
+    let aliasPartIds: string[] = [];
+
+    // Alias lookup allows supplier/OEM/aftermarket part numbers to resolve to canonical parts.
+    if (normalized) {
+      const { data: aliasMatches } = await supabase
+        .from('part_number_aliases')
+        .select('part_id')
+        .eq('alias_part_number_normalized', normalized)
+        .limit(50);
+
+      aliasPartIds = Array.from(new Set((aliasMatches || []).map((row: any) => row.part_id)));
+    }
+
+    const { data: textMatches, error: textError } = await supabase
+      .from('parts')
+      .select('*')
+      .or(`part_name.ilike.%${trimmed}%,part_number.ilike.%${trimmed}%,category.ilike.%${trimmed}%`)
+      .limit(100);
+
+    if (textError) throw textError;
+
+    let aliasMatches: any[] = [];
+    if (aliasPartIds.length > 0) {
+      const { data: aliasParts, error: aliasError } = await supabase
+        .from('parts')
+        .select('*')
+        .in('id', aliasPartIds);
+
+      if (aliasError) throw aliasError;
+      aliasMatches = aliasParts || [];
+    }
+
+    const merged = new Map<string, Part>();
+    [...aliasMatches, ...(textMatches || [])].forEach((part: any) => {
+      merged.set(part.id, toPart(part));
+    });
+
+    return Array.from(merged.values());
   }
 
   async getPartById(id: string): Promise<Part | null> {
@@ -36,18 +92,38 @@ export class SupabasePartsRepository implements PartsRepository {
       .single();
 
     if (error) return null;
-    return data;
+    return toPart(data);
   }
 
   async getPartByNumber(partNumber: string): Promise<Part | null> {
-    const { data, error} = await supabase
+    const normalized = normalizePartNumber(partNumber);
+
+    if (normalized) {
+      const { data: alias } = await supabase
+        .from('part_number_aliases')
+        .select('part_id')
+        .eq('alias_part_number_normalized', normalized)
+        .limit(1)
+        .maybeSingle();
+
+      if (alias?.part_id) {
+        const { data: part } = await supabase
+          .from('parts')
+          .select('*')
+          .eq('id', alias.part_id)
+          .maybeSingle();
+
+        if (part) return toPart(part);
+      }
+    }
+
+    const { data } = await supabase
       .from('parts')
       .select('*')
       .eq('part_number', partNumber)
-      .single();
+      .maybeSingle();
 
-    if (error) return null;
-    return data;
+    return data ? toPart(data) : null;
   }
 }
 
