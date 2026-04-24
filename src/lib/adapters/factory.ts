@@ -10,6 +10,7 @@ import {
   VehicleRepository,
   EventRepository,
   SettlementRepository,
+  ImportRepository,
 } from '../repositories/types';
 
 import {
@@ -20,6 +21,7 @@ import {
   MockVehicleRepository,
   MockEventRepository,
   MockSettlementRepository,
+  MockImportRepository,
 } from './mock';
 
 import {
@@ -30,6 +32,7 @@ import {
   SupabaseVehicleRepository,
   SupabaseEventRepository,
   SupabaseSettlementRepository,
+  SupabaseImportRepository,
 } from './supabase';
 
 // Singleton instances
@@ -40,6 +43,7 @@ let couponRepo: CouponRepository;
 let vehicleRepo: VehicleRepository;
 let eventRepo: EventRepository;
 let settlementRepo: SettlementRepository;
+let importRepo: ImportRepository;
 
 export function getPartsRepository(): PartsRepository {
   if (!partsRepo) {
@@ -102,4 +106,13 @@ export function getSettlementRepository(): SettlementRepository {
       : new MockSettlementRepository();
   }
   return settlementRepo;
+}
+
+export function getImportRepository(): ImportRepository {
+  if (!importRepo) {
+    importRepo = isLiveMode()
+      ? new SupabaseImportRepository()
+      : new MockImportRepository();
+  }
+  return importRepo;
 }

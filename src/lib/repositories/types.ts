@@ -1,7 +1,7 @@
 // Repository Interface Types
 // Defines contracts that both mock and Supabase adapters must implement
 
-import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState } from '@/types';
+import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType } from '@/types';
 
 export interface PartsRepository {
   searchParts(query: string): Promise<Part[]>;
@@ -61,4 +61,32 @@ export interface SettlementRepository {
   generateMonthlySettlement(supplierId: string, year: number, month: number): Promise<string>;
   getSupplierSettlements(supplierId: string): Promise<any[]>;
   getSettlementDetails(settlementId: string): Promise<any>;
+}
+
+export interface ImportRepository {
+  /** Create a new import job, insert rows, run alias-matching, return updated job. */
+  createJob(
+    supplierId: string,
+    sourceType: ImportSourceType,
+    rows: ImportRowInput[],
+    fileName?: string
+  ): Promise<ImportJob>;
+
+  /** List all import jobs for a supplier, newest first. */
+  getJobs(supplierId: string): Promise<ImportJob[]>;
+
+  /** Get a single job with its rows. */
+  getJobWithRows(jobId: string): Promise<{ job: ImportJob; rows: ImportRow[] } | null>;
+
+  /**
+   * Assign a canonical part to an unmatched row (supplier resolves manually).
+   * Re-runs `process_import_job` counts after update.
+   */
+  resolveRow(rowId: string, partId: string): Promise<void>;
+
+  /** Push all matched rows to live supplier_inventory and register aliases. */
+  approveJob(jobId: string): Promise<{ upserted: number }>;
+
+  /** Reject a job without applying it. */
+  rejectJob(jobId: string): Promise<void>;
 }

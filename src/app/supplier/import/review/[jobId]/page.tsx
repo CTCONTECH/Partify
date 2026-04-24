@@ -1,0 +1,366 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { TopBar } from '@/components/TopBar';
+import { BottomNav } from '@/components/BottomNav';
+import { Button } from '@/components/Button';
+import { Badge } from '@/components/Badge';
+import { getImportRepository, getPartsRepository } from '@/lib/adapters/factory';
+import { ImportJob, ImportRow, Part } from '@/types';
+import { CheckCircle2, AlertCircle, HelpCircle, ChevronDown } from 'lucide-react';
+
+// ── Status badge helper ──────────────────────────────────────────────────────
+
+function MatchBadge({ status }: { status: ImportRow['matchStatus'] }) {
+  if (status === 'matched') return <Badge variant="available" size="sm">Matched</Badge>;
+  if (status === 'unmatched') return <Badge variant="low-stock" size="sm">Unmatched</Badge>;
+  if (status === 'error') return <Badge variant="out-of-stock" size="sm">Error</Badge>;
+  if (status === 'skipped') return <Badge variant="out-of-stock" size="sm">Skipped</Badge>;
+  return <Badge variant="low-stock" size="sm">Pending</Badge>;
+}
+
+// ── Row resolve widget ───────────────────────────────────────────────────────
+
+function ResolveRow({
+  row,
+  parts,
+  onResolved,
+}: {
+  row: ImportRow;
+  parts: Part[];
+  onResolved: (rowId: string, partId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState('');
+  const [query, setQuery] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const filtered = parts.filter(p =>
+    p.partNumber.toLowerCase().includes(query.toLowerCase()) ||
+    p.partName.toLowerCase().includes(query.toLowerCase())
+  );
+
+  async function handleSave() {
+    if (!selected) return;
+    setSaving(true);
+    try {
+      const repo = getImportRepository();
+      await repo.resolveRow(row.id, selected);
+      onResolved(row.id, selected);
+    } finally {
+      setSaving(false);
+      setOpen(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-xs text-[var(--primary)] underline underline-offset-2"
+      >
+        Assign manually
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-2 bg-[var(--muted)] rounded-xl p-3 space-y-2">
+      <input
+        type="text"
+        placeholder="Search part name or number…"
+        className="w-full text-sm border border-[var(--border)] rounded-lg px-3 py-1.5 bg-[var(--background)]"
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        autoFocus
+      />
+      <div className="max-h-36 overflow-y-auto divide-y divide-[var(--border)]">
+        {filtered.slice(0, 20).map(p => (
+          <label key={p.id} className="flex items-center gap-2 py-1.5 cursor-pointer">
+            <input
+              type="radio"
+              name={`resolve-${row.id}`}
+              value={p.id}
+              checked={selected === p.id}
+              onChange={() => setSelected(p.id)}
+            />
+            <span className="text-xs font-mono">{p.partNumber}</span>
+            <span className="text-xs text-[var(--muted-foreground)]">{p.partName}</span>
+          </label>
+        ))}
+        {filtered.length === 0 && (
+          <p className="text-xs text-[var(--muted-foreground)] py-2">No matching parts found.</p>
+        )}
+      </div>
+      <div className="flex gap-2 pt-1">
+        <Button variant="primary" className="text-xs py-1.5 px-3" onClick={handleSave} disabled={!selected || saving}>
+          {saving ? 'Saving…' : 'Save'}
+        </Button>
+        <button onClick={() => setOpen(false)} className="text-xs text-[var(--muted-foreground)]">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
+
+export default function ImportReviewPage() {
+  const { jobId } = useParams<{ jobId: string }>();
+  const router = useRouter();
+
+  const [job, setJob] = useState<ImportJob | null>(null);
+  const [rows, setRows] = useState<ImportRow[]>([]);
+  const [parts, setParts] = useState<Part[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [done, setDone] = useState<{ upserted: number } | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [importRepo, partsRepo] = [getImportRepository(), getPartsRepository()];
+        const [result, allParts] = await Promise.all([
+          importRepo.getJobWithRows(jobId as string),
+          partsRepo.searchParts(''),
+        ]);
+
+        if (!result) {
+          setError('Import job not found.');
+          return;
+        }
+        setJob(result.job);
+        setRows(result.rows);
+        setParts(allParts);
+      } catch (e: any) {
+        setError(e?.message || 'Failed to load import job.');
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [jobId]);
+
+  function handleResolved(rowId: string, partId: string) {
+    setRows(prev =>
+      prev.map(r =>
+        r.id === rowId
+          ? { ...r, matchStatus: 'matched', matchedPartId: partId }
+          : r
+      )
+    );
+    setJob(prev => {
+      if (!prev) return prev;
+      const matched = rows.filter(r => r.id === rowId ? true : r.matchStatus === 'matched').length;
+      const unmatched = rows.filter(r => r.id === rowId ? false : r.matchStatus === 'unmatched').length;
+      return { ...prev, matchedCount: matched, unmatchedCount: unmatched };
+    });
+  }
+
+  async function handleApprove() {
+    if (!job) return;
+    setApproving(true);
+    try {
+      const result = await getImportRepository().approveJob(job.id);
+      setDone(result);
+      setJob(prev => prev ? { ...prev, status: 'approved' } : prev);
+    } catch (e: any) {
+      setError(e?.message || 'Approval failed.');
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function handleReject() {
+    if (!job) return;
+    setRejecting(true);
+    try {
+      await getImportRepository().rejectJob(job.id);
+      router.push('/supplier/inventory');
+    } catch (e: any) {
+      setError(e?.message || 'Rejection failed.');
+      setRejecting(false);
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] pb-20">
+        <TopBar title="Review Import" showBack />
+        <div className="p-6 space-y-3 animate-pulse">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-16 bg-[var(--muted)] rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] pb-20">
+        <TopBar title="Review Import" showBack />
+        <div className="p-6">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p className="text-sm">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (done) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center pb-20 px-6">
+        <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Import approved</h2>
+        <p className="text-[var(--muted-foreground)] text-center mb-6">
+          {done.upserted} item{done.upserted !== 1 ? 's' : ''} added or updated in your live inventory.
+        </p>
+        <Button variant="primary" onClick={() => router.push('/supplier/inventory')}>
+          Back to Inventory
+        </Button>
+      </div>
+    );
+  }
+
+  const matched = rows.filter(r => r.matchStatus === 'matched').length;
+  const unmatched = rows.filter(r => r.matchStatus === 'unmatched').length;
+  const isApproved = job?.status === 'approved' || job?.status === 'rejected';
+
+  return (
+    <div className="min-h-screen bg-[var(--background)] pb-20">
+      <TopBar title="Review Import" showBack />
+
+      <div className="p-6 max-w-2xl mx-auto space-y-5">
+
+        {/* Summary card */}
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">
+              {job?.fileName ? job.fileName : `${job?.sourceType ?? 'Import'} job`}
+            </p>
+            <Badge
+              variant={
+                job?.status === 'approved' ? 'available' :
+                job?.status === 'rejected' ? 'out-of-stock' : 'low-stock'
+              }
+              size="sm"
+            >
+              {job?.status}
+            </Badge>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="bg-[var(--muted)] rounded-xl p-2">
+              <p className="text-lg font-semibold">{rows.length}</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Total</p>
+            </div>
+            <div className="bg-[var(--muted)] rounded-xl p-2">
+              <p className="text-lg font-semibold text-green-600">{matched}</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Matched</p>
+            </div>
+            <div className="bg-[var(--muted)] rounded-xl p-2">
+              <p className="text-lg font-semibold text-amber-600">{unmatched}</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Unmatched</p>
+            </div>
+          </div>
+          {unmatched > 0 && !isApproved && (
+            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+              <HelpCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700">
+                {unmatched} row{unmatched !== 1 ? 's' : ''} couldn&apos;t be matched automatically.
+                Assign them manually below, or approve now to import only the matched rows.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Row list */}
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden">
+          <p className="text-sm font-medium px-4 py-3 border-b border-[var(--border)]">Rows</p>
+          <div className="divide-y divide-[var(--border)]">
+            {rows.map(row => {
+              const matchedPart = row.matchedPartId
+                ? parts.find(p => p.id === row.matchedPartId)
+                : undefined;
+
+              return (
+                <div key={row.id} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-mono">{row.rawPartNumber}</p>
+                      {matchedPart && (
+                        <p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">
+                          → {matchedPart.partName} ({matchedPart.partNumber})
+                        </p>
+                      )}
+                      {row.rawDescription && !matchedPart && (
+                        <p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">
+                          {row.rawDescription}
+                        </p>
+                      )}
+                      {row.errorReason && (
+                        <p className="text-xs text-red-500 mt-0.5">{row.errorReason}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <MatchBadge status={row.matchStatus} />
+                      <div className="flex gap-2 text-xs text-[var(--muted-foreground)]">
+                        {row.price !== undefined && <span>R{row.price.toFixed(2)}</span>}
+                        {row.stock !== undefined && <span>{row.stock} qty</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Manual resolution UI for unmatched rows */}
+                  {row.matchStatus === 'unmatched' && !isApproved && (
+                    <ResolveRow row={row} parts={parts} onResolved={handleResolved} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Actions */}
+        {!isApproved && (
+          <div className="flex gap-3">
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={handleApprove}
+              disabled={approving || rejecting || matched === 0}
+            >
+              {approving ? 'Approving…' : `Approve ${matched} matched`}
+            </Button>
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={handleReject}
+              disabled={approving || rejecting}
+            >
+              {rejecting ? 'Rejecting…' : 'Reject all'}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <BottomNav role="supplier" />
+    </div>
+  );
+}

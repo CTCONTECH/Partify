@@ -79,6 +79,52 @@ export interface RedemptionEvent {
   metadata?: any;
 }
 
+// ── Supplier Import Staging Pipeline ────────────────────────────────────────
+
+export type ImportSourceType = 'manual' | 'csv' | 'api' | 'sftp';
+export type ImportJobStatus = 'pending' | 'processing' | 'review' | 'approved' | 'rejected' | 'error';
+export type ImportRowMatchStatus = 'pending' | 'matched' | 'unmatched' | 'error' | 'skipped';
+
+export interface ImportJob {
+  id: string;
+  supplierId: string;
+  sourceType: ImportSourceType;
+  status: ImportJobStatus;
+  fileName?: string;
+  rowCount: number;
+  matchedCount: number;
+  unmatchedCount: number;
+  errorCount: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ImportRow {
+  id: string;
+  jobId: string;
+  rowNumber: number;
+  rawPartNumber: string;
+  normalizedPartNumber: string;
+  rawDescription?: string;
+  price?: number;
+  stock?: number;
+  matchStatus: ImportRowMatchStatus;
+  matchedPartId?: string;
+  errorReason?: string;
+  approvedAt?: string;
+  createdAt: string;
+}
+
+/** Shape for a single row submitted by the supplier (before DB insertion) */
+export interface ImportRowInput {
+  rowNumber: number;
+  rawPartNumber: string;
+  rawDescription?: string;
+  price?: number;
+  stock?: number;
+}
+
 export interface SupplierStatement {
   supplierId: string;
   month: string;

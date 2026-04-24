@@ -6,7 +6,10 @@ import { TopBar } from '@/components/TopBar';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { mockParts, mockInventory } from '@/data/mockData';
-import { Package, DollarSign } from 'lucide-react';
+import { getImportRepository } from '@/lib/adapters/factory';
+import { Package, DollarSign, AlertCircle } from 'lucide-react';
+
+const MOCK_SUPPLIER_ID = 's5';
 
 export default function EditInventoryItem() {
   const params = useParams();
@@ -14,12 +17,14 @@ export default function EditInventoryItem() {
   const partId = params.partId as string;
 
   const part = mockParts.find(p => p.id === partId);
-  const inventoryItem = mockInventory.find(inv => inv.partId === partId && inv.supplierId === 's5');
+  const inventoryItem = mockInventory.find(inv => inv.partId === partId && inv.supplierId === MOCK_SUPPLIER_ID);
 
   const [formData, setFormData] = useState({
     price: inventoryItem?.price.toString() || '',
     stock: inventoryItem?.stock.toString() || ''
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!part) {
@@ -27,9 +32,30 @@ export default function EditInventoryItem() {
     }
   }, [part, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push('/supplier/inventory');
+    if (!part) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const repo = getImportRepository();
+      const job = await repo.createJob(
+        MOCK_SUPPLIER_ID,
+        'manual',
+        [{
+          rowNumber: 1,
+          rawPartNumber: part.partNumber,
+          price: parseFloat(formData.price),
+          stock: parseInt(formData.stock, 10),
+        }]
+      );
+      router.push(`/supplier/import/review/${job.id}`);
+    } catch (err: any) {
+      setSubmitError(err?.message || 'Failed to save. Please try again.');
+      setSubmitting(false);
+    }
   };
 
   if (!part) return null;
@@ -70,19 +96,27 @@ export default function EditInventoryItem() {
           <div className="bg-[var(--accent)] border border-[var(--primary)]/20 rounded-xl p-4">
             <h4 className="text-base mb-2">Low stock alert</h4>
             <p className="text-sm text-[var(--muted-foreground)]">
-              You'll be notified when stock falls below 5 units
+              You&apos;ll be notified when stock falls below 5 units
             </p>
           </div>
 
+          {submitError && (
+            <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p className="text-sm">{submitError}</p>
+            </div>
+          )}
+
           <div className="pt-4 space-y-3">
-            <Button type="submit" fullWidth size="lg">
-              Save Changes
+            <Button type="submit" fullWidth size="lg" disabled={submitting}>
+              {submitting ? 'Saving…' : 'Save Changes'}
             </Button>
             <Button
               type="button"
               variant="ghost"
               fullWidth
               onClick={() => router.push('/supplier/inventory')}
+              disabled={submitting}
             >
               Cancel
             </Button>
@@ -92,3 +126,4 @@ export default function EditInventoryItem() {
     </div>
   );
 }
+

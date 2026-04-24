@@ -10,8 +10,9 @@ import {
   VehicleRepository,
   EventRepository,
   SettlementRepository,
+  ImportRepository,
 } from '../repositories/types';
-import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState } from '@/types';
+import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType } from '@/types';
 
 const supabase = createClient();
 
@@ -479,5 +480,189 @@ export class SupabaseSettlementRepository implements SettlementRepository {
     if (itemsError) throw itemsError;
 
     return { ...settlement, lineItems: lineItems || [] };
+  }
+}
+
+function toImportJob(row: any): ImportJob {
+  return {
+    id: row.id,
+    supplierId: row.supplier_id,
+    sourceType: row.source_type as ImportSourceType,
+    status: row.status,
+    fileName: row.file_name ?? undefined,
+    rowCount: row.row_count,
+    matchedCount: row.matched_count,
+    unmatchedCount: row.unmatched_count,
+    errorCount: row.error_count,
+    notes: row.notes ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toImportRow(row: any): ImportRow {
+  return {
+    id: row.id,
+    jobId: row.job_id,
+    rowNumber: row.row_number,
+    rawPartNumber: row.raw_part_number,
+    normalizedPartNumber: row.normalized_part_number,
+    rawDescription: row.raw_description ?? undefined,
+    price: row.price ?? undefined,
+    stock: row.stock ?? undefined,
+    matchStatus: row.match_status,
+    matchedPartId: row.matched_part_id ?? undefined,
+    errorReason: row.error_reason ?? undefined,
+    approvedAt: row.approved_at ?? undefined,
+    createdAt: row.created_at,
+  };
+}
+
+export class SupabaseImportRepository implements ImportRepository {
+  async createJob(
+    supplierId: string,
+    sourceType: ImportSourceType,
+    rows: ImportRowInput[],
+    fileName?: string
+  ): Promise<ImportJob> {
+    // 1. Create the job record
+    const { data: jobData, error: jobError } = await supabase
+      .from('import_jobs')
+      .insert({
+        supplier_id: supplierId,
+        source_type: sourceType,
+        file_name: fileName ?? null,
+        row_count: rows.length,
+      })
+      .select()
+      .single();
+
+    if (jobError) throw jobError;
+    const jobId = jobData.id;
+
+    // 2. Insert all rows
+    if (rows.length > 0) {
+      const rowInserts = rows.map(r => ({
+        job_id: jobId,
+        row_number: r.rowNumber,
+        raw_part_number: r.rawPartNumber,
+        raw_description: r.rawDescription ?? null,
+        price: r.price ?? null,
+        stock: r.stock ?? null,
+      }));
+
+      const { error: rowsError } = await supabase
+        .from('import_rows')
+        .insert(rowInserts);
+
+      if (rowsError) throw rowsError;
+    }
+
+    // 3. Run alias-matching on the DB
+    const { error: procError } = await (supabase as any).rpc('process_import_job', {
+      p_job_id: jobId,
+    });
+    if (procError) throw procError;
+
+    // 4. Return refreshed job
+    const { data: refreshed, error: refreshError } = await supabase
+      .from('import_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single();
+
+    if (refreshError) throw refreshError;
+    return toImportJob(refreshed);
+  }
+
+  async getJobs(supplierId: string): Promise<ImportJob[]> {
+    const { data, error } = await supabase
+      .from('import_jobs')
+      .select('*')
+      .eq('supplier_id', supplierId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map(toImportJob);
+  }
+
+  async getJobWithRows(jobId: string): Promise<{ job: ImportJob; rows: ImportRow[] } | null> {
+    const { data: jobData, error: jobError } = await supabase
+      .from('import_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .maybeSingle();
+
+    if (jobError) throw jobError;
+    if (!jobData) return null;
+
+    const { data: rowsData, error: rowsError } = await supabase
+      .from('import_rows')
+      .select('*')
+      .eq('job_id', jobId)
+      .order('row_number', { ascending: true });
+
+    if (rowsError) throw rowsError;
+
+    return {
+      job: toImportJob(jobData),
+      rows: (rowsData || []).map(toImportRow),
+    };
+  }
+
+  async resolveRow(rowId: string, partId: string): Promise<void> {
+    const { error } = await supabase
+      .from('import_rows')
+      .update({
+        matched_part_id: partId,
+        match_status: 'matched',
+        error_reason: null,
+      })
+      .eq('id', rowId);
+
+    if (error) throw error;
+
+    // Refresh job counts by re-running process step (counts only, matched rows already set)
+    const { data: rowData } = await supabase
+      .from('import_rows')
+      .select('job_id')
+      .eq('id', rowId)
+      .single();
+
+    if (rowData?.job_id) {
+      await supabase
+        .from('import_jobs')
+        .update({
+          matched_count: supabase
+            .from('import_rows')
+            .select('id', { count: 'exact', head: true })
+            .eq('job_id', rowData.job_id)
+            .eq('match_status', 'matched') as any,
+          unmatched_count: supabase
+            .from('import_rows')
+            .select('id', { count: 'exact', head: true })
+            .eq('job_id', rowData.job_id)
+            .eq('match_status', 'unmatched') as any,
+        })
+        .eq('id', rowData.job_id);
+    }
+  }
+
+  async approveJob(jobId: string): Promise<{ upserted: number }> {
+    const { data, error } = await (supabase as any).rpc('approve_import_job', {
+      p_job_id: jobId,
+    });
+
+    if (error) throw error;
+    return { upserted: data?.upserted ?? 0 };
+  }
+
+  async rejectJob(jobId: string): Promise<void> {
+    const { error } = await supabase
+      .from('import_jobs')
+      .update({ status: 'rejected' })
+      .eq('id', jobId);
+
+    if (error) throw error;
   }
 }

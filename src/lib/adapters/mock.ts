@@ -9,16 +9,19 @@ import {
   VehicleRepository,
   EventRepository,
   SettlementRepository,
+  ImportRepository,
 } from '../repositories/types';
 import { mockParts, mockSuppliers, mockInventory } from '@/data/mockData';
 import { createCoupon, updateCouponState as updateCouponStateUtil } from '../coupon';
 import { calculateDistance, calculateFuelCost } from '../geolocation';
-import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState } from '@/types';
+import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType } from '@/types';
 
 // In-memory storage for mock mode
 const mockCoupons = new Map<string, Coupon>();
 const mockVehicles = new Map<string, any[]>();
 const mockEvents: any[] = [];
+const mockImportJobs = new Map<string, ImportJob>();
+const mockImportRows = new Map<string, ImportRow[]>();
 
 export class MockPartsRepository implements PartsRepository {
   async searchParts(query: string): Promise<Part[]> {
@@ -268,5 +271,109 @@ export class MockSettlementRepository implements SettlementRepository {
 
   async getSettlementDetails(settlementId: string): Promise<any> {
     return null;
+  }
+}
+
+export class MockImportRepository implements ImportRepository {
+  async createJob(
+    supplierId: string,
+    sourceType: ImportSourceType,
+    rows: ImportRowInput[],
+    fileName?: string
+  ): Promise<ImportJob> {
+    const jobId = `mock-job-${Date.now()}`;
+    const now = new Date().toISOString();
+
+    const importRows: ImportRow[] = rows.map((r, idx) => ({
+      id: `mock-row-${jobId}-${idx}`,
+      jobId,
+      rowNumber: r.rowNumber,
+      rawPartNumber: r.rawPartNumber,
+      normalizedPartNumber: r.rawPartNumber.toUpperCase().replace(/[^A-Z0-9]/g, ''),
+      rawDescription: r.rawDescription,
+      price: r.price,
+      stock: r.stock,
+      matchStatus: 'unmatched',
+      createdAt: now,
+    }));
+
+    // Simple alias matching against mock parts
+    importRows.forEach(row => {
+      const matched = mockParts.find(
+        p => p.partNumber.toUpperCase().replace(/[^A-Z0-9]/g, '') === row.normalizedPartNumber
+      );
+      if (matched) {
+        row.matchStatus = 'matched';
+        row.matchedPartId = matched.id;
+      }
+    });
+
+    const matchedCount = importRows.filter(r => r.matchStatus === 'matched').length;
+    const unmatchedCount = importRows.filter(r => r.matchStatus === 'unmatched').length;
+
+    const job: ImportJob = {
+      id: jobId,
+      supplierId,
+      sourceType,
+      status: 'review',
+      fileName,
+      rowCount: rows.length,
+      matchedCount,
+      unmatchedCount,
+      errorCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    mockImportJobs.set(jobId, job);
+    mockImportRows.set(jobId, importRows);
+    return job;
+  }
+
+  async getJobs(supplierId: string): Promise<ImportJob[]> {
+    return Array.from(mockImportJobs.values())
+      .filter(j => j.supplierId === supplierId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async getJobWithRows(jobId: string): Promise<{ job: ImportJob; rows: ImportRow[] } | null> {
+    const job = mockImportJobs.get(jobId);
+    if (!job) return null;
+    return { job, rows: mockImportRows.get(jobId) || [] };
+  }
+
+  async resolveRow(rowId: string, partId: string): Promise<void> {
+    for (const rows of mockImportRows.values()) {
+      const row = rows.find(r => r.id === rowId);
+      if (row) {
+        row.matchStatus = 'matched';
+        row.matchedPartId = partId;
+        row.errorReason = undefined;
+        const job = mockImportJobs.get(row.jobId);
+        if (job) {
+          const allRows = mockImportRows.get(row.jobId) || [];
+          job.matchedCount = allRows.filter(r => r.matchStatus === 'matched').length;
+          job.unmatchedCount = allRows.filter(r => r.matchStatus === 'unmatched').length;
+        }
+        return;
+      }
+    }
+  }
+
+  async approveJob(jobId: string): Promise<{ upserted: number }> {
+    const job = mockImportJobs.get(jobId);
+    if (!job) return { upserted: 0 };
+    job.status = 'approved';
+    const rows = mockImportRows.get(jobId) || [];
+    const upserted = rows.filter(r => r.matchStatus === 'matched').length;
+    rows.filter(r => r.matchStatus === 'matched').forEach(r => {
+      r.approvedAt = new Date().toISOString();
+    });
+    return { upserted };
+  }
+
+  async rejectJob(jobId: string): Promise<void> {
+    const job = mockImportJobs.get(jobId);
+    if (job) job.status = 'rejected';
   }
 }

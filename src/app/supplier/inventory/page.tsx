@@ -50,9 +50,17 @@ export default function SupplierInventory() {
           <p className="text-sm text-[var(--muted-foreground)]">
             {filteredInventory.length} items
           </p>
-          <button className="text-sm text-[var(--primary)] underline">
-            Add Part
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/supplier/import')}
+              className="text-sm text-[var(--primary)] underline"
+            >
+              Import CSV
+            </button>
+            <button className="text-sm text-[var(--primary)] underline">
+              Add Part
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">
