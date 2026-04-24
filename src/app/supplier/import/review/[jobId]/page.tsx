@@ -10,6 +10,22 @@ import { getImportRepository, getPartsRepository } from '@/lib/adapters/factory'
 import { ImportJob, ImportRow, Part } from '@/types';
 import { CheckCircle2, AlertCircle, HelpCircle, ChevronDown } from 'lucide-react';
 
+function parseManualDescription(rawDescription?: string) {
+  if (!rawDescription?.includes('PART:')) return null;
+
+  const values = rawDescription.split(' | ').reduce((acc, piece) => {
+    const [key, value] = piece.split(':');
+    if (key && value) acc[key] = value;
+    return acc;
+  }, {} as Record<string, string>);
+
+  return {
+    partName: values.PART,
+    category: values.CATEGORY,
+    compatibility: values.COMPATIBILITY,
+  };
+}
+
 // ── Status badge helper ──────────────────────────────────────────────────────
 
 function MatchBadge({ status }: { status: ImportRow['matchStatus'] }) {
@@ -234,6 +250,7 @@ export default function ImportReviewPage() {
   const matched = rows.filter(r => r.matchStatus === 'matched').length;
   const unmatched = rows.filter(r => r.matchStatus === 'unmatched').length;
   const isApproved = job?.status === 'approved' || job?.status === 'rejected';
+  const hasCatalogCandidate = rows.some(r => r.matchStatus === 'unmatched' && !!parseManualDescription(r.rawDescription));
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
@@ -275,8 +292,9 @@ export default function ImportReviewPage() {
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
               <HelpCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700">
-                {unmatched} row{unmatched !== 1 ? 's' : ''} couldn&apos;t be matched automatically.
-                Assign them manually below, or approve now to import only the matched rows.
+                {hasCatalogCandidate
+                  ? 'This submission includes a part that is not yet in the canonical catalog. It stays in staging until Partify maps it to an existing part or creates a new canonical part.'
+                  : `${unmatched} row${unmatched !== 1 ? 's' : ''} couldn&apos;t be matched automatically. Assign them manually below, or approve now to import only the matched rows.`}
               </p>
             </div>
           )}
@@ -290,6 +308,7 @@ export default function ImportReviewPage() {
               const matchedPart = row.matchedPartId
                 ? parts.find(p => p.id === row.matchedPartId)
                 : undefined;
+              const manualDescription = parseManualDescription(row.rawDescription);
 
               return (
                 <div key={row.id} className="px-4 py-3">
@@ -301,7 +320,14 @@ export default function ImportReviewPage() {
                           → {matchedPart.partName} ({matchedPart.partNumber})
                         </p>
                       )}
-                      {row.rawDescription && !matchedPart && (
+                      {manualDescription && !matchedPart && (
+                        <div className="mt-1.5 space-y-1">
+                          <p className="text-xs text-[var(--foreground)]">{manualDescription.partName}</p>
+                          <p className="text-xs text-[var(--muted-foreground)]">{manualDescription.category}</p>
+                          <p className="text-xs text-[var(--muted-foreground)]">{manualDescription.compatibility}</p>
+                        </div>
+                      )}
+                      {row.rawDescription && !matchedPart && !manualDescription && (
                         <p className="text-xs text-[var(--muted-foreground)] truncate mt-0.5">
                           {row.rawDescription}
                         </p>
@@ -321,7 +347,9 @@ export default function ImportReviewPage() {
 
                   {/* Manual resolution UI for unmatched rows */}
                   {row.matchStatus === 'unmatched' && !isApproved && (
-                    <ResolveRow row={row} parts={parts} onResolved={handleResolved} />
+                    manualDescription
+                      ? <p className="text-xs text-[var(--muted-foreground)] mt-2">Waiting for catalog review by Partify.</p>
+                      : <ResolveRow row={row} parts={parts} onResolved={handleResolved} />
                   )}
                 </div>
               );
