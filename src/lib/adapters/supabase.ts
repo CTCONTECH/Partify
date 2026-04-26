@@ -14,7 +14,14 @@ import {
 } from '../repositories/types';
 import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType } from '@/types';
 
-const supabase = createClient();
+let supabaseClient: any | null = null;
+
+function supabase() {
+  if (!supabaseClient) {
+    supabaseClient = createClient();
+  }
+  return supabaseClient;
+}
 
 function normalizePartNumber(value: string): string {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -39,7 +46,7 @@ export class SupabasePartsRepository implements PartsRepository {
   async searchParts(query: string): Promise<Part[]> {
     const trimmed = query.trim();
     if (!trimmed) {
-      const { data, error } = await supabase.from('parts').select('*');
+      const { data, error } = await supabase().from('parts').select('*');
       if (error) throw error;
       return (data || []).map((row: any) => toPart(row));
     }
@@ -49,8 +56,8 @@ export class SupabasePartsRepository implements PartsRepository {
 
     // Alias lookup allows supplier/OEM/aftermarket part numbers to resolve to canonical parts.
     if (normalized) {
-      const { data: aliasMatches } = await supabase
-        .from('part_number_aliases')
+      const { data: aliasMatches } = await supabase()
+      .from('part_number_aliases')
         .select('part_id')
         .eq('alias_part_number_normalized', normalized)
         .limit(50);
@@ -58,7 +65,7 @@ export class SupabasePartsRepository implements PartsRepository {
       aliasPartIds = Array.from(new Set((aliasMatches || []).map((row: any) => row.part_id)));
     }
 
-    const { data: textMatches, error: textError } = await supabase
+    const { data: textMatches, error: textError } = await supabase()
       .from('parts')
       .select('*')
       .or(`part_name.ilike.%${trimmed}%,part_number.ilike.%${trimmed}%,category.ilike.%${trimmed}%`)
@@ -68,8 +75,8 @@ export class SupabasePartsRepository implements PartsRepository {
 
     let aliasMatches: any[] = [];
     if (aliasPartIds.length > 0) {
-      const { data: aliasParts, error: aliasError } = await supabase
-        .from('parts')
+      const { data: aliasParts, error: aliasError } = await supabase()
+      .from('parts')
         .select('*')
         .in('id', aliasPartIds);
 
@@ -86,7 +93,7 @@ export class SupabasePartsRepository implements PartsRepository {
   }
 
   async getPartById(id: string): Promise<Part | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('parts')
       .select('*')
       .eq('id', id)
@@ -100,16 +107,16 @@ export class SupabasePartsRepository implements PartsRepository {
     const normalized = normalizePartNumber(partNumber);
 
     if (normalized) {
-      const { data: alias } = await supabase
-        .from('part_number_aliases')
+      const { data: alias } = await supabase()
+      .from('part_number_aliases')
         .select('part_id')
         .eq('alias_part_number_normalized', normalized)
         .limit(1)
         .maybeSingle();
 
       if (alias?.part_id) {
-        const { data: part } = await supabase
-          .from('parts')
+        const { data: part } = await supabase()
+      .from('parts')
           .select('*')
           .eq('id', alias.part_id)
           .maybeSingle();
@@ -118,7 +125,7 @@ export class SupabasePartsRepository implements PartsRepository {
       }
     }
 
-    const { data } = await supabase
+    const { data } = await supabase()
       .from('parts')
       .select('*')
       .eq('part_number', partNumber)
@@ -130,7 +137,7 @@ export class SupabasePartsRepository implements PartsRepository {
 
 export class SupabaseSupplierRepository implements SupplierRepository {
   async getSuppliers(): Promise<Supplier[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('suppliers')
       .select('*')
       .eq('active', true);
@@ -140,7 +147,7 @@ export class SupabaseSupplierRepository implements SupplierRepository {
   }
 
   async getSupplierById(id: string): Promise<Supplier | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('suppliers')
       .select('*')
       .eq('id', id)
@@ -155,7 +162,7 @@ export class SupabaseSupplierRepository implements SupplierRepository {
     partId?: string,
     maxDistanceKm: number = 50
   ): Promise<Supplier[]> {
-    const { data, error } = await (supabase as any).rpc('find_nearest_suppliers', {
+    const { data, error } = await (supabase() as any).rpc('find_nearest_suppliers', {
       user_lat: location.lat,
       user_lon: location.lon,
       part_id_filter: partId || null,
@@ -201,7 +208,7 @@ export class SupabaseSupplierRepository implements SupplierRepository {
 
 export class SupabaseInventoryRepository implements InventoryRepository {
   async getPartAvailability(partId: string, userLocation?: Location): Promise<SupplierResult[]> {
-    const { data, error } = await (supabase as any).rpc('get_part_availability', {
+    const { data, error } = await (supabase() as any).rpc('get_part_availability', {
       part_id_filter: partId,
       user_lat: userLocation?.lat || null,
       user_lon: userLocation?.lon || null,
@@ -241,7 +248,7 @@ export class SupabaseInventoryRepository implements InventoryRepository {
   }
 
   async getSupplierInventory(supplierId: string): Promise<InventoryItem[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('supplier_inventory')
       .select('*')
       .eq('supplier_id', supplierId);
@@ -251,7 +258,7 @@ export class SupabaseInventoryRepository implements InventoryRepository {
   }
 
   async updateStock(inventoryId: string, newStock: number): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from('supplier_inventory')
       .update({ stock: newStock })
       .eq('id', inventoryId);
@@ -260,7 +267,7 @@ export class SupabaseInventoryRepository implements InventoryRepository {
   }
 
   async updatePrice(inventoryId: string, newPrice: number): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from('supplier_inventory')
       .update({ price: newPrice })
       .eq('id', inventoryId);
@@ -277,7 +284,7 @@ export class SupabaseCouponRepository implements CouponRepository {
     price: number,
     userLocation?: Location
   ): Promise<Coupon> {
-    const { data, error } = await (supabase as any).rpc('issue_coupon', {
+    const { data, error } = await (supabase() as any).rpc('issue_coupon', {
       p_user_id: userId,
       p_supplier_id: supplierId,
       p_part_id: partId,
@@ -296,7 +303,7 @@ export class SupabaseCouponRepository implements CouponRepository {
   }
 
   async getCoupon(couponId: string): Promise<Coupon | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('coupon_issues')
       .select('*')
       .eq('id', couponId)
@@ -307,7 +314,7 @@ export class SupabaseCouponRepository implements CouponRepository {
   }
 
   async getCouponByCode(code: string): Promise<Coupon | null> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('coupon_issues')
       .select('*')
       .eq('code', code)
@@ -318,7 +325,7 @@ export class SupabaseCouponRepository implements CouponRepository {
   }
 
   async getUserCoupons(userId: string): Promise<Coupon[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('coupon_issues')
       .select('*')
       .eq('user_id', userId)
@@ -331,7 +338,7 @@ export class SupabaseCouponRepository implements CouponRepository {
   async updateCouponState(couponId: string, newState: CouponState, actorId?: string): Promise<void> {
     const updates: any = { status: newState };
 
-    const { error } = await supabase
+    const { error } = await supabase()
       .from('coupon_issues')
       .update(updates)
       .eq('id', couponId);
@@ -340,7 +347,7 @@ export class SupabaseCouponRepository implements CouponRepository {
   }
 
   async redeemCoupon(couponId: string, redeemedBy: string, orderAmount: number): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from('coupon_issues')
       .update({
         status: 'redeemed',
@@ -354,7 +361,7 @@ export class SupabaseCouponRepository implements CouponRepository {
     if (error) throw error;
 
     // Log event
-    await (supabase as any).rpc('log_coupon_event', {
+    await (supabase() as any).rpc('log_coupon_event', {
       p_coupon_id: couponId,
       p_event_type: 'coupon_redeemed',
       p_actor_id: redeemedBy,
@@ -383,7 +390,7 @@ export class SupabaseCouponRepository implements CouponRepository {
 
 export class SupabaseVehicleRepository implements VehicleRepository {
   async getUserVehicles(userId: string): Promise<any[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('vehicles')
       .select('*')
       .eq('user_id', userId);
@@ -393,7 +400,7 @@ export class SupabaseVehicleRepository implements VehicleRepository {
   }
 
   async addVehicle(userId: string, vehicle: any): Promise<any> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('vehicles')
       .insert({ user_id: userId, ...vehicle })
       .select()
@@ -404,7 +411,7 @@ export class SupabaseVehicleRepository implements VehicleRepository {
   }
 
   async setPrimaryVehicle(vehicleId: string): Promise<void> {
-    const { data: vehicle } = await supabase
+    const { data: vehicle } = await supabase()
       .from('vehicles')
       .select('user_id')
       .eq('id', vehicleId)
@@ -413,7 +420,7 @@ export class SupabaseVehicleRepository implements VehicleRepository {
     if (!vehicle) return;
 
     // This is handled by trigger in database
-    const { error } = await supabase
+    const { error } = await supabase()
       .from('vehicles')
       .update({ is_primary: true })
       .eq('id', vehicleId);
@@ -429,7 +436,7 @@ export class SupabaseEventRepository implements EventRepository {
     actorId?: string,
     metadata?: any
   ): Promise<void> {
-    const { error } = await (supabase as any).rpc('log_coupon_event', {
+    const { error } = await (supabase() as any).rpc('log_coupon_event', {
       p_coupon_id: couponId,
       p_event_type: eventType,
       p_actor_id: actorId || null,
@@ -442,7 +449,7 @@ export class SupabaseEventRepository implements EventRepository {
 
 export class SupabaseSettlementRepository implements SettlementRepository {
   async generateMonthlySettlement(supplierId: string, year: number, month: number): Promise<string> {
-    const { data, error } = await (supabase as any).rpc('generate_monthly_settlement', {
+    const { data, error } = await (supabase() as any).rpc('generate_monthly_settlement', {
       p_supplier_id: supplierId,
       p_year: year,
       p_month: month,
@@ -453,7 +460,7 @@ export class SupabaseSettlementRepository implements SettlementRepository {
   }
 
   async getSupplierSettlements(supplierId: string): Promise<any[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('supplier_monthly_settlements')
       .select('*')
       .eq('supplier_id', supplierId)
@@ -464,7 +471,7 @@ export class SupabaseSettlementRepository implements SettlementRepository {
   }
 
   async getSettlementDetails(settlementId: string): Promise<any> {
-    const { data: settlement, error: settlementError } = await supabase
+    const { data: settlement, error: settlementError } = await supabase()
       .from('supplier_monthly_settlements')
       .select('*')
       .eq('id', settlementId)
@@ -472,7 +479,7 @@ export class SupabaseSettlementRepository implements SettlementRepository {
 
     if (settlementError) throw settlementError;
 
-    const { data: lineItems, error: itemsError } = await supabase
+    const { data: lineItems, error: itemsError } = await supabase()
       .from('settlement_line_items')
       .select('*')
       .eq('settlement_id', settlementId);
@@ -526,7 +533,7 @@ export class SupabaseImportRepository implements ImportRepository {
     fileName?: string
   ): Promise<ImportJob> {
     // 1. Create the job record
-    const { data: jobData, error: jobError } = await supabase
+    const { data: jobData, error: jobError } = await supabase()
       .from('import_jobs')
       .insert({
         supplier_id: supplierId,
@@ -551,21 +558,21 @@ export class SupabaseImportRepository implements ImportRepository {
         stock: r.stock ?? null,
       }));
 
-      const { error: rowsError } = await supabase
-        .from('import_rows')
+      const { error: rowsError } = await supabase()
+      .from('import_rows')
         .insert(rowInserts);
 
       if (rowsError) throw rowsError;
     }
 
     // 3. Run alias-matching on the DB
-    const { error: procError } = await (supabase as any).rpc('process_import_job', {
+    const { error: procError } = await (supabase() as any).rpc('process_import_job', {
       p_job_id: jobId,
     });
     if (procError) throw procError;
 
     // 4. Return refreshed job
-    const { data: refreshed, error: refreshError } = await supabase
+    const { data: refreshed, error: refreshError } = await supabase()
       .from('import_jobs')
       .select('*')
       .eq('id', jobId)
@@ -576,7 +583,7 @@ export class SupabaseImportRepository implements ImportRepository {
   }
 
   async getJobs(supplierId: string): Promise<ImportJob[]> {
-    const { data, error } = await supabase
+    const { data, error } = await supabase()
       .from('import_jobs')
       .select('*')
       .eq('supplier_id', supplierId)
@@ -587,7 +594,7 @@ export class SupabaseImportRepository implements ImportRepository {
   }
 
   async getJobWithRows(jobId: string): Promise<{ job: ImportJob; rows: ImportRow[] } | null> {
-    const { data: jobData, error: jobError } = await supabase
+    const { data: jobData, error: jobError } = await supabase()
       .from('import_jobs')
       .select('*')
       .eq('id', jobId)
@@ -596,7 +603,7 @@ export class SupabaseImportRepository implements ImportRepository {
     if (jobError) throw jobError;
     if (!jobData) return null;
 
-    const { data: rowsData, error: rowsError } = await supabase
+    const { data: rowsData, error: rowsError } = await supabase()
       .from('import_rows')
       .select('*')
       .eq('job_id', jobId)
@@ -611,7 +618,7 @@ export class SupabaseImportRepository implements ImportRepository {
   }
 
   async resolveRow(rowId: string, partId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from('import_rows')
       .update({
         matched_part_id: partId,
@@ -623,33 +630,44 @@ export class SupabaseImportRepository implements ImportRepository {
     if (error) throw error;
 
     // Refresh job counts by re-running process step (counts only, matched rows already set)
-    const { data: rowData } = await supabase
+    const { data: rowData } = await supabase()
       .from('import_rows')
       .select('job_id')
       .eq('id', rowId)
       .single();
 
     if (rowData?.job_id) {
-      await supabase
+      const { count: matchedCount, error: matchedError } = await supabase()
+        .from('import_rows')
+        .select('id', { count: 'exact', head: true })
+        .eq('job_id', rowData.job_id)
+        .eq('match_status', 'matched');
+
+      if (matchedError) throw matchedError;
+
+      const { count: unmatchedCount, error: unmatchedError } = await supabase()
+        .from('import_rows')
+        .select('id', { count: 'exact', head: true })
+        .eq('job_id', rowData.job_id)
+        .eq('match_status', 'unmatched');
+
+      if (unmatchedError) throw unmatchedError;
+
+      const { error: updateError } = await supabase()
         .from('import_jobs')
         .update({
-          matched_count: supabase
-            .from('import_rows')
-            .select('id', { count: 'exact', head: true })
-            .eq('job_id', rowData.job_id)
-            .eq('match_status', 'matched') as any,
-          unmatched_count: supabase
-            .from('import_rows')
-            .select('id', { count: 'exact', head: true })
-            .eq('job_id', rowData.job_id)
-            .eq('match_status', 'unmatched') as any,
+          matched_count: matchedCount ?? 0,
+          unmatched_count: unmatchedCount ?? 0,
+          status: (unmatchedCount ?? 0) > 0 ? 'review' : 'processing',
         })
         .eq('id', rowData.job_id);
+
+      if (updateError) throw updateError;
     }
   }
 
   async approveJob(jobId: string): Promise<{ upserted: number }> {
-    const { data, error } = await (supabase as any).rpc('approve_import_job', {
+    const { data, error } = await (supabase() as any).rpc('approve_import_job', {
       p_job_id: jobId,
     });
 
@@ -658,7 +676,7 @@ export class SupabaseImportRepository implements ImportRepository {
   }
 
   async rejectJob(jobId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await supabase()
       .from('import_jobs')
       .update({ status: 'rejected' })
       .eq('id', jobId);
@@ -666,3 +684,6 @@ export class SupabaseImportRepository implements ImportRepository {
     if (error) throw error;
   }
 }
+
+
+
