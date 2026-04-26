@@ -69,7 +69,18 @@ export async function middleware(request: NextRequest) {
 
     const role = profile?.role || user.user_metadata?.role;
 
-    const target = role === 'supplier' ? '/supplier/dashboard' : '/client/home';
+    let target = role === 'supplier' ? '/supplier/dashboard' : '/client/home';
+
+    // If supplier, check if they have a supplier record yet.
+    if (role === 'supplier') {
+      const { data: supplierRow } = await supabase
+        .from('suppliers')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!supplierRow) target = '/supplier/onboarding';
+    }
+
     if (pathname !== target) {
       return NextResponse.redirect(new URL(target, request.url));
     }

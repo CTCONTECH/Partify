@@ -1,16 +1,85 @@
 "use client";
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Badge } from '@/components/Badge';
 import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
+import { isLiveMode } from '@/lib/config';
+import { createClient } from '@/lib/supabase/client';
+
+interface SupplierInfo {
+  businessName: string;
+  suburb: string;
+  active: boolean;
+}
+
+interface DashboardStats {
+  totalParts: number;
+  activeListings: number;
+  lowStock: number;
+}
+
+const MOCK_INFO: SupplierInfo = { businessName: 'ProAuto Supply', suburb: 'Brackenfell', active: true };
+const MOCK_STATS: DashboardStats = { totalParts: 1245, activeListings: 892, lowStock: 23 };
 
 export default function SupplierDashboard() {
-  const stats = [
-    { label: 'Total Parts', value: '1,245', icon: Package, color: 'bg-blue-500' },
-    { label: 'Revenue (This Month)', value: 'R 45,230', icon: DollarSign, color: 'bg-green-500' },
-    { label: 'Active Listings', value: '892', icon: TrendingUp, color: 'bg-purple-500' },
-    { label: 'Low Stock Items', value: '23', icon: AlertTriangle, color: 'bg-orange-500' }
+  const router = useRouter();
+  const [info, setInfo] = useState<SupplierInfo>(MOCK_INFO);
+  const [stats, setStats] = useState<DashboardStats>(MOCK_STATS);
+
+  useEffect(() => {
+    if (!isLiveMode()) return;
+
+    const load = async () => {
+      const supabase = createClient();
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      if (!user) return;
+
+      // Load supplier profile
+      const { data: supplier } = await supabase
+        .from('suppliers')
+        .select('business_name, suburb, active')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!supplier) {
+        // Supplier record not set up yet — redirect to onboarding
+        router.replace('/supplier/onboarding');
+        return;
+      }
+
+      setInfo({
+        businessName: supplier.business_name,
+        suburb: supplier.suburb,
+        active: supplier.active,
+      });
+
+      // Load inventory counts
+      const { data: inventory } = await supabase
+        .from('supplier_inventory')
+        .select('id, stock')
+        .eq('supplier_id', user.id);
+
+      if (inventory) {
+        setStats({
+          totalParts: inventory.length,
+          activeListings: inventory.filter((i) => i.stock > 0).length,
+          lowStock: inventory.filter((i) => i.stock > 0 && i.stock <= 5).length,
+        });
+      }
+    };
+
+    load();
+  }, [router]);
+
+  const statCards = [
+    { label: 'Total Parts', value: stats.totalParts.toLocaleString(), icon: Package, color: 'bg-blue-500' },
+    { label: 'Revenue (This Month)', value: 'R —', icon: DollarSign, color: 'bg-green-500' },
+    { label: 'Active Listings', value: stats.activeListings.toLocaleString(), icon: TrendingUp, color: 'bg-purple-500' },
+    { label: 'Low Stock Items', value: stats.lowStock.toLocaleString(), icon: AlertTriangle, color: 'bg-orange-500' },
   ];
 
   const recentActivity = [
@@ -25,15 +94,15 @@ export default function SupplierDashboard() {
 
       <div className="p-6 max-w-2xl mx-auto">
         <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white">
-          <h2 className="text-2xl mb-2">ProAuto Supply</h2>
-          <p className="text-white/90 mb-4">Brackenfell, Cape Town</p>
+          <h2 className="text-2xl mb-2">{info.businessName}</h2>
+          <p className="text-white/90 mb-4">{info.suburb}, Cape Town</p>
           <div className="flex items-center gap-2">
-            <Badge variant="default" size="sm">Active Supplier</Badge>
+            <Badge variant="default" size="sm">{info.active ? 'Active Supplier' : 'Inactive'}</Badge>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          {stats.map((stat) => {
+          {statCards.map((stat) => {
             const Icon = stat.icon;
             return (
               <div

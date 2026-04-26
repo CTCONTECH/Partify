@@ -64,7 +64,7 @@ function SignupForm() {
         // Non-fatal for confirmation-required projects.
       }
 
-      const destination = role === 'client' ? '/client/vehicle-setup' : '/supplier/dashboard';
+      const destination = role === 'client' ? '/client/vehicle-setup' : '/supplier/onboarding';
       router.push(destination);
     } catch (err: any) {
       setError(err?.message || 'Signup failed. Please try again.');
