@@ -52,6 +52,12 @@ export default function SupplierInventory() {
           </p>
           <div className="flex gap-3">
             <button
+              onClick={() => router.push('/supplier/requests')}
+              className="text-sm text-[var(--primary)] underline"
+            >
+              Requests
+            </button>
+            <button
               onClick={() => router.push('/supplier/import')}
               className="text-sm text-[var(--primary)] underline"
             >
