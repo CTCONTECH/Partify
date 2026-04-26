@@ -6,10 +6,10 @@ import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Badge } from '@/components/Badge';
 import { getImportRepository } from '@/lib/adapters/factory';
+import { useSupplierId } from '@/hooks/useSupplierId';
 import { ImportJob } from '@/types';
 import { ChevronRight, FileWarning, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
-const MOCK_SUPPLIER_ID = 's5';
 
 function statusVariant(status: ImportJob['status']) {
   if (status === 'approved') return 'success';
@@ -34,15 +34,21 @@ function toFriendlyDate(value: string) {
 
 export default function SupplierRequestsPage() {
   const router = useRouter();
+  const { supplierId, loading: supplierLoading } = useSupplierId();
   const [jobs, setJobs] = useState<ImportJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
+      if (!supplierId) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const repo = getImportRepository();
-        const all = await repo.getJobs(MOCK_SUPPLIER_ID);
+        const all = await repo.getJobs(supplierId);
         // Part requests are manual submissions that still need matching/catalog review.
         const requests = all.filter(j => j.sourceType === 'manual');
         setJobs(requests);
@@ -53,7 +59,7 @@ export default function SupplierRequestsPage() {
       }
     }
     load();
-  }, []);
+  }, [supplierId]);
 
   const stats = useMemo(() => {
     return {
@@ -63,7 +69,7 @@ export default function SupplierRequestsPage() {
     };
   }, [jobs]);
 
-  if (loading) {
+  if (loading || supplierLoading) {
     return (
       <div className="min-h-screen bg-[var(--background)] pb-20">
         <TopBar title="Part Requests" showBack />

@@ -9,7 +9,6 @@ export default function Welcome() {
   const router = useRouter();
 
   const handleGetStarted = () => {
-    localStorage.setItem('hasSeenWelcome', 'true');
     router.push('/role-select');
   };
 

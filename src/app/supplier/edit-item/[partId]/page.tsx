@@ -7,17 +7,17 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { mockParts, mockInventory } from '@/data/mockData';
 import { getImportRepository } from '@/lib/adapters/factory';
+import { useSupplierId } from '@/hooks/useSupplierId';
 import { Package, DollarSign, AlertCircle } from 'lucide-react';
-
-const MOCK_SUPPLIER_ID = 's5';
 
 export default function EditInventoryItem() {
   const params = useParams();
   const router = useRouter();
   const partId = params.partId as string;
+  const { supplierId } = useSupplierId();
 
   const part = mockParts.find(p => p.id === partId);
-  const inventoryItem = mockInventory.find(inv => inv.partId === partId && inv.supplierId === MOCK_SUPPLIER_ID);
+  const inventoryItem = mockInventory.find(inv => inv.partId === partId && inv.supplierId === supplierId);
 
   const [formData, setFormData] = useState({
     price: inventoryItem?.price.toString() || '',
@@ -27,10 +27,10 @@ export default function EditInventoryItem() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!part) {
+    if (!part || !supplierId) {
       router.push('/supplier/inventory');
     }
-  }, [part, router]);
+  }, [part, supplierId, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +42,7 @@ export default function EditInventoryItem() {
     try {
       const repo = getImportRepository();
       const job = await repo.createJob(
-        MOCK_SUPPLIER_ID,
+        supplierId!,
         'manual',
         [{
           rowNumber: 1,

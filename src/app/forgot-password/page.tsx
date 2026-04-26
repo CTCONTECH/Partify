@@ -4,16 +4,29 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { createClient } from '@/lib/supabase/client';
 import { Mail, ArrowLeft } from 'lucide-react';
 
 export default function ForgotPassword() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
+
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/login`,
+      });
+      if (resetError) throw resetError;
+      setSent(true);
+    } catch (err: any) {
+      setError(err?.message || 'Could not send reset email.');
+    }
   };
 
   if (sent) {
@@ -64,6 +77,10 @@ export default function ForgotPassword() {
           <Button type="submit" fullWidth size="lg" className="mt-6">
             Send Reset Link
           </Button>
+
+          {error && (
+            <p className="text-sm text-[var(--destructive)]">{error}</p>
+          )}
         </form>
       </div>
     </div>

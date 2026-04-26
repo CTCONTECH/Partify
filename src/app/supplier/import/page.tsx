@@ -7,6 +7,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
 import { Badge } from '@/components/Badge';
 import { getImportRepository } from '@/lib/adapters/factory';
+import { useSupplierId } from '@/hooks/useSupplierId';
 import { ImportRowInput } from '@/types';
 import { Upload, FileText, AlertCircle, CheckCircle2, X } from 'lucide-react';
 
@@ -54,10 +55,9 @@ function parseCSV(text: string): ParsedRow[] {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-const MOCK_SUPPLIER_ID = 's5';
-
 export default function SupplierImportPage() {
   const router = useRouter();
+  const { supplierId, loading } = useSupplierId();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fileName, setFileName] = useState<string | null>(null);
@@ -112,7 +112,7 @@ export default function SupplierImportPage() {
     try {
       const repo = getImportRepository();
       const job = await repo.createJob(
-        MOCK_SUPPLIER_ID,
+        supplierId!,
         'csv',
         validRows,
         fileName ?? undefined
@@ -250,7 +250,7 @@ export default function SupplierImportPage() {
             variant="primary"
             className="w-full"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || loading || !supplierId}
           >
             {submitting
               ? 'Processing…'

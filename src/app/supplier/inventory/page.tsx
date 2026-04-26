@@ -7,14 +7,16 @@ import { BottomNav } from '@/components/BottomNav';
 import { SearchBar } from '@/components/SearchBar';
 import { Badge } from '@/components/Badge';
 import { mockParts, mockInventory } from '@/data/mockData';
+import { useSupplierId } from '@/hooks/useSupplierId';
 import { ChevronRight } from 'lucide-react';
 
 export default function SupplierInventory() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const { supplierId } = useSupplierId();
 
   const myInventory = mockInventory
-    .filter(inv => inv.supplierId === 's5')
+    .filter(inv => inv.supplierId === supplierId)
     .map(inv => {
       const part = mockParts.find(p => p.id === inv.partId);
       return { ...inv, ...part };

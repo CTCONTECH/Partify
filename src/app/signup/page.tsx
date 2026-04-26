@@ -4,6 +4,8 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { createClient } from '@/lib/supabase/client';
+import { upsertProfileForCurrentUser } from '@/lib/auth/client';
 import { Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -20,14 +22,54 @@ function SignupForm() {
     password: '',
     confirmPassword: ''
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('userRole', role);
-    localStorage.setItem('hasAccount', 'true');
-    localStorage.setItem('hasSeenWelcome', 'true');
-    const destination = role === 'client' ? '/client/vehicle-setup' : '/supplier/dashboard';
-    router.push(destination);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            role,
+            name: formData.name,
+            phone: formData.phone,
+          },
+        },
+      });
+
+      if (signUpError) throw signUpError;
+
+      // If email confirmation is disabled this upsert runs immediately.
+      // If confirmation is enabled, middleware/login will finalize profile on first sign-in.
+      try {
+        await upsertProfileForCurrentUser({
+          role: role as 'client' | 'supplier' | 'admin',
+          name: formData.name,
+          phone: formData.phone,
+        });
+      } catch {
+        // Non-fatal for confirmation-required projects.
+      }
+
+      const destination = role === 'client' ? '/client/vehicle-setup' : '/supplier/dashboard';
+      router.push(destination);
+    } catch (err: any) {
+      setError(err?.message || 'Signup failed. Please try again.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -96,9 +138,13 @@ function SignupForm() {
             required
           />
 
-          <Button type="submit" fullWidth size="lg" className="mt-6">
-            Create Account
+          <Button type="submit" fullWidth size="lg" className="mt-6" disabled={submitting}>
+            {submitting ? 'Creating Account...' : 'Create Account'}
           </Button>
+
+          {error && (
+            <p className="text-sm text-[var(--destructive)]">{error}</p>
+          )}
         </form>
 
         <div className="text-center mt-6">

@@ -1,22 +1,58 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { PartifyLogo } from '@/components/PartifyLogo';
+import { createClient } from '@/lib/supabase/client';
+import { getAuthContext, upsertProfileForCurrentUser } from '@/lib/auth/client';
 import { Mail, Lock } from 'lucide-react';
 
-export default function Login() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const role = localStorage.getItem('userRole') || 'client';
-    const destination = role === 'client' ? '/client/home' : '/supplier/dashboard';
-    router.push(destination);
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) throw signInError;
+
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+
+      if (user?.email) {
+        const metadataRole = (user.user_metadata?.role || 'client') as 'client' | 'supplier' | 'admin';
+        await upsertProfileForCurrentUser({
+          role: metadataRole,
+          name: user.user_metadata?.name || user.email.split('@')[0],
+          phone: user.user_metadata?.phone,
+        });
+      }
+
+      const auth = await getAuthContext();
+      const destination =
+        searchParams.get('next') ||
+        (auth.role === 'supplier' ? '/supplier/dashboard' : '/client/home');
+
+      router.push(destination);
+    } catch (err: any) {
+      setError(err?.message || 'Login failed. Please check your credentials.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -61,8 +97,12 @@ export default function Login() {
           </button>
 
           <Button type="submit" fullWidth size="lg">
-            Log In
+            {submitting ? 'Logging in...' : 'Log In'}
           </Button>
+
+          {error && (
+            <p className="text-sm text-[var(--destructive)]">{error}</p>
+          )}
         </form>
 
         <div className="text-center">
@@ -76,5 +116,13 @@ export default function Login() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--background)]" />}>
+      <LoginForm />
+    </Suspense>
   );
 }

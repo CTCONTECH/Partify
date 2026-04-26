@@ -8,7 +8,6 @@ export default function RoleSelect() {
   const router = useRouter();
 
   const selectRole = (role: 'client' | 'supplier') => {
-    localStorage.setItem('userRole', role);
     router.push(`/signup?role=${role}`);
   };
 

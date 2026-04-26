@@ -9,6 +9,7 @@ import { Input } from '@/components/Input';
 import { SearchBar } from '@/components/SearchBar';
 import { Badge } from '@/components/Badge';
 import { getPartsRepository, getImportRepository } from '@/lib/adapters/factory';
+import { useSupplierId } from '@/hooks/useSupplierId';
 import { Part } from '@/types';
 import {
   Search,
@@ -24,7 +25,6 @@ import {
   Car,
 } from 'lucide-react';
 
-const MOCK_SUPPLIER_ID = 's5';
 
 // ── Step 1: Search catalog ───────────────────────────────────────────────────
 
@@ -162,10 +162,11 @@ function CatalogSearch({
 
 interface PricingFormProps {
   part: Part;
+  supplierId: string;
   onBack: () => void;
 }
 
-function PricingForm({ part, onBack }: PricingFormProps) {
+function PricingForm({ part, supplierId, onBack }: PricingFormProps) {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -206,7 +207,7 @@ function PricingForm({ part, onBack }: PricingFormProps) {
     try {
       const repo = getImportRepository();
       const job = await repo.createJob(
-        MOCK_SUPPLIER_ID,
+        supplierId,
         'manual',
         [{
           rowNumber: 1,
@@ -329,11 +330,12 @@ function PricingForm({ part, onBack }: PricingFormProps) {
 }
 
 interface ManualCandidateFormProps {
+  supplierId: string;
   initialQuery: string;
   onBack: () => void;
 }
 
-function ManualCandidateForm({ initialQuery, onBack }: ManualCandidateFormProps) {
+function ManualCandidateForm({ supplierId, initialQuery, onBack }: ManualCandidateFormProps) {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -380,7 +382,7 @@ function ManualCandidateForm({ initialQuery, onBack }: ManualCandidateFormProps)
     try {
       const repo = getImportRepository();
       const job = await repo.createJob(
-        MOCK_SUPPLIER_ID,
+        supplierId,
         'manual',
         [{
           rowNumber: 1,
@@ -504,6 +506,7 @@ function ManualCandidateForm({ initialQuery, onBack }: ManualCandidateFormProps)
 export default function AddPartPage() {
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [manualSeed, setManualSeed] = useState('');
+  const { supplierId, loading } = useSupplierId();
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
@@ -530,7 +533,17 @@ export default function AddPartPage() {
       </div>
 
       <div className="px-6 max-w-2xl mx-auto">
-        {!selectedPart && !manualSeed
+        {loading ? (
+          <div className="space-y-3 animate-pulse">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-16 bg-[var(--muted)] rounded-2xl" />
+            ))}
+          </div>
+        ) : !supplierId ? (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-700">
+            Supplier account not found. Please log in with a supplier account.
+          </div>
+        ) : !selectedPart && !manualSeed
           ? (
             <CatalogSearch
               onSelect={(part) => {
@@ -544,8 +557,8 @@ export default function AddPartPage() {
             />
           )
           : selectedPart
-            ? <PricingForm part={selectedPart} onBack={() => setSelectedPart(null)} />
-            : <ManualCandidateForm initialQuery={manualSeed} onBack={() => setManualSeed('')} />
+            ? <PricingForm supplierId={supplierId} part={selectedPart} onBack={() => setSelectedPart(null)} />
+            : <ManualCandidateForm supplierId={supplierId} initialQuery={manualSeed} onBack={() => setManualSeed('')} />
         }
       </div>
 

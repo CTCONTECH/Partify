@@ -3,14 +3,24 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PartifyLogo } from '@/components/PartifyLogo';
+import { getAuthContext } from '@/lib/auth/client';
 
 export default function Splash() {
   const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const hasAccount = localStorage.getItem('hasAccount') === 'true';
-      router.push(hasAccount ? '/login' : '/welcome');
+      const route = async () => {
+        const auth = await getAuthContext();
+        if (!auth.userId) {
+          router.push('/welcome');
+          return;
+        }
+
+        router.push(auth.role === 'supplier' ? '/supplier/dashboard' : '/client/home');
+      };
+
+      route();
     }, 2000);
 
     return () => clearTimeout(timer);
