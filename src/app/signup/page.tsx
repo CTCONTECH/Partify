@@ -42,6 +42,7 @@ function SignupForm() {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/login`,
           data: {
             role,
             name: formData.name,

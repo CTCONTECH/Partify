@@ -15,12 +15,17 @@ function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+
+  const showResendConfirmation = error?.toLowerCase().includes('email not confirmed');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setResendMessage(null);
 
     try {
       const supabase = createClient();
@@ -52,6 +57,34 @@ function LoginForm() {
     } catch (err: any) {
       setError(err?.message || 'Login failed. Please check your credentials.');
       setSubmitting(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email.trim()) {
+      setError('Enter your email address first.');
+      return;
+    }
+
+    setResending(true);
+    setResendMessage(null);
+
+    try {
+      const supabase = createClient();
+      const { error: resendError } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
+      });
+
+      if (resendError) throw resendError;
+      setResendMessage('Confirmation email sent. Check your inbox.');
+    } catch (err: any) {
+      setError(err?.message || 'Could not resend confirmation email.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -102,6 +135,21 @@ function LoginForm() {
 
           {error && (
             <p className="text-sm text-[var(--destructive)]">{error}</p>
+          )}
+
+          {showResendConfirmation && (
+            <button
+              type="button"
+              onClick={handleResendConfirmation}
+              disabled={resending}
+              className="text-sm text-[var(--primary)] underline disabled:opacity-60"
+            >
+              {resending ? 'Sending confirmation email...' : 'Resend confirmation email'}
+            </button>
+          )}
+
+          {resendMessage && (
+            <p className="text-sm text-[var(--success)]">{resendMessage}</p>
           )}
         </form>
 
