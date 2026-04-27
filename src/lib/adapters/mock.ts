@@ -215,6 +215,15 @@ export class MockCouponRepository implements CouponRepository {
 
 export class MockVehicleRepository implements VehicleRepository {
   async getUserVehicles(userId: string): Promise<any[]> {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(`vehicles_${userId}`);
+      if (stored) {
+        const vehicles = JSON.parse(stored);
+        mockVehicles.set(userId, vehicles);
+        return vehicles;
+      }
+    }
+
     return mockVehicles.get(userId) || [];
   }
 
@@ -224,10 +233,14 @@ export class MockVehicleRepository implements VehicleRepository {
       id: `v_${Date.now()}`,
       userId,
       ...vehicle,
+      isPrimary: vehicles.length === 0,
       createdAt: new Date().toISOString(),
     };
     vehicles.push(newVehicle);
     mockVehicles.set(userId, vehicles);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`vehicles_${userId}`, JSON.stringify(vehicles));
+    }
     return newVehicle;
   }
 
@@ -237,6 +250,9 @@ export class MockVehicleRepository implements VehicleRepository {
         v.isPrimary = v.id === vehicleId;
       });
       mockVehicles.set(userId, vehicles);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`vehicles_${userId}`, JSON.stringify(vehicles));
+      }
     }
   }
 }

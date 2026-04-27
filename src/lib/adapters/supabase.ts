@@ -395,18 +395,18 @@ export class SupabaseVehicleRepository implements VehicleRepository {
       .select('*')
       .eq('user_id', userId);
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return data || [];
   }
 
   async addVehicle(userId: string, vehicle: any): Promise<any> {
     const { data, error } = await supabase()
       .from('vehicles')
-      .insert({ user_id: userId, ...vehicle })
+      .insert({ user_id: userId, ...vehicle, is_primary: true })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return data;
   }
 
@@ -425,7 +425,7 @@ export class SupabaseVehicleRepository implements VehicleRepository {
       .update({ is_primary: true })
       .eq('id', vehicleId);
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
   }
 }
 

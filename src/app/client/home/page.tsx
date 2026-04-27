@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
+import { vehicleService } from '@/lib/services/vehicle-service';
+import { formatVehicle } from '@/lib/vehicle-catalog';
 import { Search, Car, History, TrendingUp } from 'lucide-react';
 
 export default function ClientHome() {
@@ -12,7 +14,16 @@ export default function ClientHome() {
   const [vehicle, setVehicle] = useState<string | null>(null);
 
   useEffect(() => {
-    setVehicle(localStorage.getItem('userVehicle'));
+    const loadVehicle = async () => {
+      try {
+        const primaryVehicle = await vehicleService.getPrimaryVehicle();
+        setVehicle(primaryVehicle ? formatVehicle(primaryVehicle) : null);
+      } catch {
+        setVehicle(null);
+      }
+    };
+
+    loadVehicle();
   }, []);
 
   return (

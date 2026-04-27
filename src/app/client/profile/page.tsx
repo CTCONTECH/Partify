@@ -1,15 +1,31 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
 import { signOut } from '@/lib/auth/client';
+import { vehicleService } from '@/lib/services/vehicle-service';
+import { formatVehicle } from '@/lib/vehicle-catalog';
 import { User, Car, Bell, HelpCircle, LogOut, ChevronRight } from 'lucide-react';
 
 export default function ClientProfile() {
   const router = useRouter();
-  const vehicle = typeof window !== 'undefined' ? localStorage.getItem('userVehicle') : null;
+  const [vehicle, setVehicle] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadVehicle = async () => {
+      try {
+        const primaryVehicle = await vehicleService.getPrimaryVehicle();
+        setVehicle(primaryVehicle ? formatVehicle(primaryVehicle) : null);
+      } catch {
+        setVehicle(null);
+      }
+    };
+
+    loadVehicle();
+  }, []);
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {

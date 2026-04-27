@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { Button } from '@/components/Button';
-import { Input } from '@/components/Input';
+import { vehicleService } from '@/lib/services/vehicle-service';
+import {
+  getVehicleEngines,
+  getVehicleMakes,
+  getVehicleModels,
+  getVehicleYears,
+} from '@/lib/vehicle-catalog';
 import { Car } from 'lucide-react';
 
 export default function VehicleSetup() {
@@ -15,13 +21,36 @@ export default function VehicleSetup() {
     year: '',
     engine: ''
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const makes = getVehicleMakes();
+  const models = formData.make ? getVehicleModels(formData.make) : [];
+  const years = formData.make && formData.model ? getVehicleYears(formData.make, formData.model) : [];
+  const engines = formData.make && formData.model && formData.year
+    ? getVehicleEngines(formData.make, formData.model, Number(formData.year))
+    : [];
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const vehicleString = `${formData.year} ${formData.make} ${formData.model} ${formData.engine}`;
-    localStorage.setItem('userVehicle', vehicleString);
-    router.push('/client/home');
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      await vehicleService.savePrimaryVehicle({
+        make: formData.make,
+        model: formData.model,
+        year: Number(formData.year),
+        engine: formData.engine,
+      });
+      router.push('/client/home');
+    } catch (err: any) {
+      setError(err?.message || 'Could not save vehicle. Please try again.');
+      setSubmitting(false);
+    }
   };
+
+  const selectClass = 'w-full h-12 px-4 bg-[var(--input-background)] border border-[var(--border)] rounded-lg text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50';
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -40,42 +69,76 @@ export default function VehicleSetup() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Make"
-            placeholder="e.g. Toyota, VW, BMW"
-            value={formData.make}
-            onChange={(e) => setFormData({ ...formData, make: e.target.value })}
-            required
-          />
+          <div>
+            <label className="block text-sm mb-2 text-[var(--foreground)]">Make</label>
+            <select
+              className={selectClass}
+              value={formData.make}
+              onChange={(e) => setFormData({ make: e.target.value, model: '', year: '', engine: '' })}
+              required
+            >
+              <option value="">Select make</option>
+              {makes.map(make => (
+                <option key={make} value={make}>{make}</option>
+              ))}
+            </select>
+          </div>
 
-          <Input
-            label="Model"
-            placeholder="e.g. Corolla, Polo, 320i"
-            value={formData.model}
-            onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-            required
-          />
+          <div>
+            <label className="block text-sm mb-2 text-[var(--foreground)]">Model</label>
+            <select
+              className={selectClass}
+              value={formData.model}
+              onChange={(e) => setFormData({ ...formData, model: e.target.value, year: '', engine: '' })}
+              disabled={!formData.make}
+              required
+            >
+              <option value="">Select model</option>
+              {models.map(model => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
+          </div>
 
-          <Input
-            label="Year"
-            type="number"
-            placeholder="e.g. 2018"
-            value={formData.year}
-            onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-            required
-          />
+          <div>
+            <label className="block text-sm mb-2 text-[var(--foreground)]">Year</label>
+            <select
+              className={selectClass}
+              value={formData.year}
+              onChange={(e) => setFormData({ ...formData, year: e.target.value, engine: '' })}
+              disabled={!formData.model}
+              required
+            >
+              <option value="">Select year</option>
+              {years.map(year => (
+                <option key={year} value={String(year)}>{year}</option>
+              ))}
+            </select>
+          </div>
 
-          <Input
-            label="Engine"
-            placeholder="e.g. 1.6 Petrol, 2.0 TSI"
-            value={formData.engine}
-            onChange={(e) => setFormData({ ...formData, engine: e.target.value })}
-            required
-          />
+          <div>
+            <label className="block text-sm mb-2 text-[var(--foreground)]">Engine</label>
+            <select
+              className={selectClass}
+              value={formData.engine}
+              onChange={(e) => setFormData({ ...formData, engine: e.target.value })}
+              disabled={!formData.year}
+              required
+            >
+              <option value="">Select engine</option>
+              {engines.map(engine => (
+                <option key={engine} value={engine}>{engine}</option>
+              ))}
+            </select>
+          </div>
+
+          {error && (
+            <p className="text-sm text-[var(--destructive)]">{error}</p>
+          )}
 
           <div className="pt-4">
-            <Button type="submit" fullWidth size="lg">
-              Save Vehicle
+            <Button type="submit" fullWidth size="lg" disabled={submitting}>
+              {submitting ? 'Saving...' : 'Save Vehicle'}
             </Button>
           </div>
         </form>

@@ -1,30 +1,75 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { SearchBar } from '@/components/SearchBar';
 import { PartCard } from '@/components/PartCard';
-import { mockParts, mockInventory } from '@/data/mockData';
+import { mockParts } from '@/data/mockData';
 import { partsService } from '@/lib/services/parts-service';
 import { isLiveMode } from '@/lib/config';
+import { vehicleService } from '@/lib/services/vehicle-service';
+import { scorePartCompatibility, VehicleOption } from '@/lib/vehicle-catalog';
 import { Part } from '@/types';
+
+interface PartStats {
+  supplierCount: number;
+  priceRange: { min: number; max: number };
+}
+
+function sortByCompatibility(parts: Part[], selectedVehicle: VehicleOption | null) {
+  return [...parts].sort((a, b) =>
+    scorePartCompatibility(b.compatibility, selectedVehicle) -
+    scorePartCompatibility(a.compatibility, selectedVehicle)
+  );
+}
 
 export default function PartSearch() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredParts, setFilteredParts] = useState<Part[]>(mockParts);
   const [isLoading, setIsLoading] = useState(false);
+  const [vehicle, setVehicle] = useState<VehicleOption | null>(null);
+  const [partStats, setPartStats] = useState<Record<string, PartStats>>({});
+
+  const loadPartStats = useCallback(async (parts: Part[]) => {
+    const entries = await Promise.all(parts.map(async (part) => {
+      const availability = await partsService.getPartAvailability(part.id);
+      const prices = availability.map(item => item.itemPrice);
+      return [
+        part.id,
+        {
+          supplierCount: availability.length,
+          priceRange: {
+            min: prices.length > 0 ? Math.min(...prices) : 0,
+            max: prices.length > 0 ? Math.max(...prices) : 0,
+          },
+        },
+      ] as const;
+    }));
+
+    setPartStats(Object.fromEntries(entries));
+  }, []);
 
   useEffect(() => {
-    if (!isLiveMode()) return;
-
     const load = async () => {
+      let primaryVehicle: VehicleOption | null = null;
+
+      try {
+        primaryVehicle = await vehicleService.getPrimaryVehicle();
+        setVehicle(primaryVehicle);
+      } catch {
+        setVehicle(null);
+      }
+
+      if (!isLiveMode()) return;
+
       setIsLoading(true);
       try {
         const parts = await partsService.searchParts('');
-        setFilteredParts(parts);
+        setFilteredParts(sortByCompatibility(parts, primaryVehicle));
+        await loadPartStats(parts);
       } catch {
         setFilteredParts(mockParts);
       } finally {
@@ -33,7 +78,11 @@ export default function PartSearch() {
     };
 
     load();
-  }, []);
+  }, [loadPartStats]);
+
+  useEffect(() => {
+    loadPartStats(filteredParts);
+  }, [filteredParts, loadPartStats]);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
@@ -42,7 +91,7 @@ export default function PartSearch() {
       setIsLoading(true);
       try {
         const parts = await partsService.searchParts(query);
-        setFilteredParts(parts);
+        setFilteredParts(sortByCompatibility(parts, vehicle));
       } catch {
         setFilteredParts([]);
       } finally {
@@ -52,7 +101,7 @@ export default function PartSearch() {
     }
 
     if (query.trim() === '') {
-      setFilteredParts(mockParts);
+      setFilteredParts(sortByCompatibility(mockParts, vehicle));
       return;
     }
 
@@ -61,19 +110,7 @@ export default function PartSearch() {
       part.partNumber.toLowerCase().includes(query.toLowerCase()) ||
       part.category.toLowerCase().includes(query.toLowerCase())
     );
-    setFilteredParts(filtered);
-  };
-
-  const getPartStats = (partId: string) => {
-    const inventory = mockInventory.filter(inv => inv.partId === partId);
-    const prices = inventory.map(inv => inv.price);
-    return {
-      supplierCount: inventory.length,
-      priceRange: {
-        min: Math.min(...prices),
-        max: Math.max(...prices)
-      }
-    };
+    setFilteredParts(sortByCompatibility(filtered, vehicle));
   };
 
   return (
@@ -103,7 +140,7 @@ export default function PartSearch() {
 
         <div className="space-y-3">
           {filteredParts.map((part) => {
-            const stats = getPartStats(part.id);
+            const stats = partStats[part.id] || { supplierCount: 0, priceRange: { min: 0, max: 0 } };
             return (
               <PartCard
                 key={part.id}
