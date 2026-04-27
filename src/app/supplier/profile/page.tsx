@@ -4,16 +4,19 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
+import { signOut } from '@/lib/auth/client';
 import { Store, MapPin, Bell, HelpCircle, LogOut, ChevronRight } from 'lucide-react';
 
 export default function SupplierProfile() {
   const router = useRouter();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (typeof window !== 'undefined') {
       localStorage.clear();
     }
-    router.push('/login');
+    await signOut();
+    router.replace('/login');
+    router.refresh();
   };
 
   return (
