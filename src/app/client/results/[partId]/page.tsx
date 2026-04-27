@@ -6,10 +6,12 @@ import { TopBar } from '@/components/TopBar';
 import { SupplierCard } from '@/components/SupplierCard';
 import { SegmentedControl } from '@/components/SegmentedControl';
 import { getSupplierResults, mockParts } from '@/data/mockData';
-import { SlidersHorizontal } from 'lucide-react';
+import { MapPin, SlidersHorizontal } from 'lucide-react';
 import { partsService } from '@/lib/services/parts-service';
-import { isLiveMode } from '@/lib/config';
-import { Part, SupplierResult } from '@/types';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { Location, Part, SupplierResult } from '@/types';
+
+const CAPE_TOWN_CBD: Location = { lat: -33.9249, lon: 18.4241 };
 
 export default function SupplierResults() {
   const params = useParams();
@@ -18,27 +20,38 @@ export default function SupplierResults() {
   const [sortBy, setSortBy] = useState<'total' | 'price' | 'distance'>('total');
   const [part, setPart] = useState<Part | null>(mockParts.find(p => p.id === partId) || null);
   const [suppliers, setSuppliers] = useState<SupplierResult[]>(getSupplierResults(partId));
+  const [isLoading, setIsLoading] = useState(true);
+  const [usingFallbackLocation, setUsingFallbackLocation] = useState(false);
+  const { location, error: locationError, loading: locationLoading, requestLocation } = useGeolocation(false);
 
   useEffect(() => {
-    if (!isLiveMode()) return;
+    void requestLocation().catch(() => undefined);
+  }, [requestLocation]);
 
+  useEffect(() => {
     const load = async () => {
+      setIsLoading(true);
+      const locationForSearch = location || CAPE_TOWN_CBD;
+      setUsingFallbackLocation(!location);
+
       try {
         const [partData, availability] = await Promise.all([
           partsService.getPartById(partId),
-          partsService.getPartAvailability(partId),
+          partsService.getPartAvailability(partId, locationForSearch),
         ]);
 
         setPart(partData);
         setSuppliers(availability);
       } catch {
         setPart(mockParts.find(p => p.id === partId) || null);
-        setSuppliers(getSupplierResults(partId));
+        setSuppliers(getSupplierResults(partId, locationForSearch));
+      } finally {
+        setIsLoading(false);
       }
     };
 
     load();
-  }, [partId]);
+  }, [partId, location]);
 
   const sortedSuppliers = [...suppliers].sort((a, b) => {
     if (sortBy === 'total') return a.totalCost - b.totalCost;
@@ -59,6 +72,35 @@ export default function SupplierResults() {
           </div>
         )}
 
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-5">
+          <div className="flex items-start gap-3">
+            <MapPin className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                {location
+                  ? 'Using your current location'
+                  : usingFallbackLocation
+                    ? 'Using approximate Cape Town location'
+                    : 'Checking your location'}
+              </p>
+              <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                {location
+                  ? 'Distances, fuel cost, and total cost are based on your browser location.'
+                  : locationError || 'Allow location access for more accurate supplier comparison.'}
+              </p>
+            </div>
+            {!locationLoading && (
+              <button
+                type="button"
+                onClick={() => void requestLocation().catch(() => undefined)}
+                className="text-sm text-[var(--primary)] underline"
+              >
+                {location ? 'Update' : 'Retry'}
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <SlidersHorizontal className="w-5 h-5 text-[var(--muted-foreground)]" />
@@ -75,6 +117,12 @@ export default function SupplierResults() {
           />
         </div>
 
+        {(isLoading || locationLoading) && (
+          <p className="text-sm text-[var(--muted-foreground)] mb-4">
+            Comparing supplier prices and distance...
+          </p>
+        )}
+
         <div className="space-y-4">
           {sortedSuppliers.map((supplier) => (
             <SupplierCard
@@ -89,7 +137,7 @@ export default function SupplierResults() {
           <div className="text-center py-12">
             <p className="text-[var(--muted-foreground)] mb-2">No suppliers found</p>
             <p className="text-sm text-[var(--muted-foreground)]">
-              This part is currently out of stock
+              No suppliers currently list this part
             </p>
           </div>
         )}

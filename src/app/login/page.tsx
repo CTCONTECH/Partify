@@ -6,7 +6,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { PartifyLogo } from '@/components/PartifyLogo';
 import { createClient } from '@/lib/supabase/client';
-import { getAuthContext, upsertProfileForCurrentUser } from '@/lib/auth/client';
+import { getAuthContext, getAuthRedirectUrl, upsertProfileForCurrentUser } from '@/lib/auth/client';
 import { Mail, Lock } from 'lucide-react';
 
 function LoginForm() {
@@ -75,7 +75,7 @@ function LoginForm() {
         type: 'signup',
         email: email.trim(),
         options: {
-          emailRedirectTo: `${window.location.origin}/login`,
+          emailRedirectTo: getAuthRedirectUrl('/login'),
         },
       });
 

@@ -42,7 +42,9 @@ export function getUserLocation(): Promise<Location> {
         });
       },
       (error) => {
-        reject(error);
+        const geolocationError = new Error(error.message || 'Unable to get your location') as Error & { code?: number };
+        geolocationError.code = error.code;
+        reject(geolocationError);
       },
       {
         enableHighAccuracy: true,

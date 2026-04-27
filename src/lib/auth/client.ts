@@ -8,6 +8,20 @@ export interface AuthContext {
   role: AppRole | null;
 }
 
+export function getAuthRedirectUrl(path = '/login'): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+
+  if (configuredUrl) {
+    return `${configuredUrl}${path}`;
+  }
+
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}${path}`;
+  }
+
+  return path;
+}
+
 function hasSupabaseEnv(): boolean {
   return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 }

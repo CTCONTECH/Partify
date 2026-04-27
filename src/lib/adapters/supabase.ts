@@ -27,6 +27,14 @@ function normalizePartNumber(value: string): string {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function toError(error: any): Error {
+  return new Error(error?.message || String(error));
+}
+
 function toPart(row: any): Part {
   const compatibility = Array.isArray(row.compatibility)
     ? row.compatibility.join(', ')
@@ -47,7 +55,7 @@ export class SupabasePartsRepository implements PartsRepository {
     const trimmed = query.trim();
     if (!trimmed) {
       const { data, error } = await supabase().from('parts').select('*');
-      if (error) throw error;
+      if (error) throw toError(error);
       return (data || []).map((row: any) => toPart(row));
     }
 
@@ -71,7 +79,7 @@ export class SupabasePartsRepository implements PartsRepository {
       .or(`part_name.ilike.%${trimmed}%,part_number.ilike.%${trimmed}%,category.ilike.%${trimmed}%`)
       .limit(100);
 
-    if (textError) throw textError;
+    if (textError) throw toError(textError);
 
     let aliasMatches: any[] = [];
     if (aliasPartIds.length > 0) {
@@ -80,7 +88,7 @@ export class SupabasePartsRepository implements PartsRepository {
         .select('*')
         .in('id', aliasPartIds);
 
-      if (aliasError) throw aliasError;
+      if (aliasError) throw toError(aliasError);
       aliasMatches = aliasParts || [];
     }
 
@@ -93,6 +101,8 @@ export class SupabasePartsRepository implements PartsRepository {
   }
 
   async getPartById(id: string): Promise<Part | null> {
+    if (!isUuid(id)) return null;
+
     const { data, error } = await supabase()
       .from('parts')
       .select('*')
@@ -142,7 +152,7 @@ export class SupabaseSupplierRepository implements SupplierRepository {
       .select('*')
       .eq('active', true);
 
-    if (error) throw error;
+    if (error) throw toError(error);
     return this.transformSuppliers(data || []);
   }
 
@@ -170,7 +180,7 @@ export class SupabaseSupplierRepository implements SupplierRepository {
       result_limit: 10,
     });
 
-    if (error) throw error;
+    if (error) throw toError(error);
     return data?.map((s: any) => ({
       id: s.supplier_id,
       name: s.business_name,
@@ -208,20 +218,22 @@ export class SupabaseSupplierRepository implements SupplierRepository {
 
 export class SupabaseInventoryRepository implements InventoryRepository {
   async getPartAvailability(partId: string, userLocation?: Location): Promise<SupplierResult[]> {
+    if (!isUuid(partId)) return [];
+
     const { data, error } = await (supabase() as any).rpc('get_part_availability', {
       part_id_filter: partId,
       user_lat: userLocation?.lat || null,
       user_lon: userLocation?.lon || null,
     });
 
-    if (error) throw error;
+    if (error) throw toError(error);
 
     const results: SupplierResult[] = (data || []).map((item: any) => ({
       id: item.supplier_id,
       name: item.business_name,
       location: item.suburb,
       address: item.address,
-      coordinates: { lat: 0, lon: 0 }, // Parse from geog
+      coordinates: { lat: item.latitude ?? 0, lon: item.longitude ?? 0 },
       distance: item.distance_km || 0,
       itemPrice: item.price,
       fuelCost: item.fuel_cost,

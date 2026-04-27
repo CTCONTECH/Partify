@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { createClient } from '@/lib/supabase/client';
-import { upsertProfileForCurrentUser } from '@/lib/auth/client';
-import { Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
+import { getAuthRedirectUrl, upsertProfileForCurrentUser } from '@/lib/auth/client';
+import { Mail, Lock, User, Phone, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +24,7 @@ function SignupForm() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +43,7 @@ function SignupForm() {
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/login`,
+          emailRedirectTo: getAuthRedirectUrl('/login'),
           data: {
             role,
             name: formData.name,
@@ -53,8 +54,6 @@ function SignupForm() {
 
       if (signUpError) throw signUpError;
 
-      // If email confirmation is disabled this upsert runs immediately.
-      // If confirmation is enabled, middleware/login will finalize profile on first sign-in.
       try {
         await upsertProfileForCurrentUser({
           role: role as 'client' | 'supplier' | 'admin',
@@ -65,8 +64,8 @@ function SignupForm() {
         // Non-fatal for confirmation-required projects.
       }
 
-      const destination = role === 'client' ? '/client/vehicle-setup' : '/supplier/onboarding';
-      router.push(destination);
+      setConfirmationEmail(formData.email);
+      setSubmitting(false);
     } catch (err: any) {
       setError(err?.message || 'Signup failed. Please try again.');
       setSubmitting(false);
@@ -88,6 +87,22 @@ function SignupForm() {
           Sign up as a {role === 'client' ? 'Client' : 'Supplier'}
         </p>
 
+        {confirmationEmail ? (
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-[var(--success)] flex-shrink-0 mt-0.5" />
+              <div>
+                <h2 className="text-base mb-1">Check your email</h2>
+                <p className="text-sm text-[var(--muted-foreground)] mb-4">
+                  We sent a confirmation link to {confirmationEmail}. Confirm your email, then log in to continue.
+                </p>
+                <Button type="button" fullWidth onClick={() => router.push('/login')}>
+                  Go to Login
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
         <form onSubmit={handleSignup} className="space-y-4">
           <Input
             type="text"
@@ -147,6 +162,7 @@ function SignupForm() {
             <p className="text-sm text-[var(--destructive)]">{error}</p>
           )}
         </form>
+        )}
 
         <div className="text-center mt-6">
           <span className="text-[var(--muted-foreground)]">Already have an account? </span>

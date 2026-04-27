@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { createClient } from '@/lib/supabase/client';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import { Location } from '@/types';
 import { Building2, MapPin, Navigation } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -12,18 +14,31 @@ export const dynamic = 'force-dynamic';
 // Default coordinates: Cape Town CBD
 const DEFAULT_LAT = -33.9249;
 const DEFAULT_LNG = 18.4241;
+const DEFAULT_LOCATION: Location = { lat: DEFAULT_LAT, lon: DEFAULT_LNG };
 
 export default function SupplierOnboarding() {
   const router = useRouter();
+  const { location, error: locationError, loading: locationLoading, requestLocation } = useGeolocation(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     businessName: '',
     address: '',
     suburb: '',
-    lat: DEFAULT_LAT.toString(),
-    lng: DEFAULT_LNG.toString(),
   });
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+
+      if (!data.user) {
+        router.replace('/login?next=/supplier/onboarding');
+      }
+    };
+
+    checkSession();
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,16 +50,14 @@ export default function SupplierOnboarding() {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData.user) throw new Error('Not authenticated');
 
-      const lat = parseFloat(form.lat);
-      const lng = parseFloat(form.lng);
-      if (isNaN(lat) || isNaN(lng)) throw new Error('Invalid coordinates');
+      const supplierLocation = location || DEFAULT_LOCATION;
 
       const { error: insertError } = await supabase.from('suppliers').insert({
         id: userData.user.id,
         business_name: form.businessName.trim(),
         address: form.address.trim(),
         suburb: form.suburb.trim(),
-        coordinates: `SRID=4326;POINT(${lng} ${lat})`,
+        coordinates: `SRID=4326;POINT(${supplierLocation.lon} ${supplierLocation.lat})`,
       });
 
       if (insertError) throw insertError;
@@ -101,32 +114,32 @@ export default function SupplierOnboarding() {
           />
 
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Navigation className="w-4 h-4 text-[var(--muted-foreground)]" />
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Coordinates (used for distance search)
-              </p>
+            <div className="flex items-start gap-3">
+              <Navigation className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Business location</p>
+                <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                  {location
+                    ? 'Using your current device location for supplier distance estimates.'
+                    : locationError || 'If you are currently at your business, use your location for better distance estimates.'}
+                </p>
+                {location && (
+                  <p className="text-xs text-[var(--muted-foreground)] mt-2">
+                    Location captured.
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => void requestLocation().catch(() => undefined)}
+                disabled={locationLoading}
+                className="text-sm text-[var(--primary)] underline disabled:opacity-60"
+              >
+                {locationLoading ? 'Locating...' : location ? 'Update' : 'Use my location'}
+              </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="number"
-                label="Latitude"
-                placeholder="-33.9249"
-                value={form.lat}
-                onChange={(e) => setForm({ ...form, lat: e.target.value })}
-                step="any"
-              />
-              <Input
-                type="number"
-                label="Longitude"
-                placeholder="18.4241"
-                value={form.lng}
-                onChange={(e) => setForm({ ...form, lng: e.target.value })}
-                step="any"
-              />
-            </div>
-            <p className="text-xs text-[var(--muted-foreground)] mt-2">
-              Default is Cape Town CBD. Update with your exact location for accurate results.
+            <p className="text-xs text-[var(--muted-foreground)] mt-3">
+              We will use your address for your supplier profile. Address verification will be added later.
             </p>
           </div>
 

@@ -21,8 +21,9 @@ Use this checklist to track the remaining work needed to make the core Partify u
 - [x] Load user vehicle on home/profile through repository/service layer.
 - [x] Use vehicle data to score compatible parts higher in search results.
 - [x] Fix search cards so supplier count/price range comes from availability calls, not direct mock inventory.
-- [ ] Add geolocation prompt/fallback before supplier comparison.
-- [ ] Pass user location into supplier results so distance/total cost is real.
+- [x] Add geolocation prompt/fallback before supplier comparison.
+- [x] Pass user location into supplier results so distance/total cost is real.
+- [x] Return live supplier coordinates from availability results for navigation/coupon flows.
 - [ ] Replace coupon screen mock data with live coupon issuing.
 - [ ] Store coupon events live: issued, opened, navigation started, redeemed.
 - [ ] Add "My coupons" / saved coupon history for client.
@@ -32,7 +33,7 @@ Use this checklist to track the remaining work needed to make the core Partify u
 - [ ] Convert supplier inventory page from mock inventory to live Supabase inventory.
 - [ ] Convert edit inventory page from mock data to live inventory rows.
 - [ ] Let supplier update price/stock directly, not only via import review.
-- [ ] Improve supplier onboarding location capture: address lookup or map pin, not manual lat/lng.
+- [x] Improve supplier onboarding location capture: current-location capture instead of manual lat/lng.
 - [ ] Load real supplier profile details on supplier profile page.
 - [ ] Add edit business profile flow.
 - [ ] Replace fake dashboard activity/revenue with real data or hide until available.

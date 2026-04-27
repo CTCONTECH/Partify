@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Location } from '@/types';
 import { getUserLocation } from '@/lib/geolocation';
 
@@ -8,7 +8,7 @@ interface UseGeolocationResult {
   location: Location | null;
   error: string | null;
   loading: boolean;
-  requestLocation: () => void;
+  requestLocation: () => Promise<void>;
 }
 
 export function useGeolocation(autoRequest = false): UseGeolocationResult {
@@ -16,7 +16,7 @@ export function useGeolocation(autoRequest = false): UseGeolocationResult {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const requestLocation = async () => {
+  const requestLocation = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -43,7 +43,7 @@ export function useGeolocation(autoRequest = false): UseGeolocationResult {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     // Try to load cached location
@@ -61,7 +61,7 @@ export function useGeolocation(autoRequest = false): UseGeolocationResult {
     if (autoRequest) {
       requestLocation();
     }
-  }, [autoRequest]);
+  }, [autoRequest, requestLocation]);
 
   return { location, error, loading, requestLocation };
 }
