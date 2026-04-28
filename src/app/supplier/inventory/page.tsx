@@ -1,28 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { SearchBar } from '@/components/SearchBar';
 import { Badge } from '@/components/Badge';
-import { mockParts, mockInventory } from '@/data/mockData';
 import { useSupplierId } from '@/hooks/useSupplierId';
-import { ChevronRight } from 'lucide-react';
+import { supplierService } from '@/lib/services/supplier-service';
+import { InventoryItem } from '@/types';
+import { AlertCircle, ChevronRight } from 'lucide-react';
 
 export default function SupplierInventory() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const { supplierId } = useSupplierId();
+  const { supplierId, loading: supplierLoading } = useSupplierId();
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const myInventory = mockInventory
-    .filter(inv => inv.supplierId === supplierId)
-    .map(inv => {
-      const part = mockParts.find(p => p.id === inv.partId);
-      return { ...inv, ...part };
-    });
+  useEffect(() => {
+    if (supplierLoading) return;
 
-  const filteredInventory = myInventory.filter(item =>
+    if (!supplierId) {
+      setInventory([]);
+      setLoading(false);
+      return;
+    }
+
+    const loadInventory = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const items = await supplierService.getSupplierInventory(supplierId);
+        setInventory(items);
+      } catch (err: any) {
+        setError(err?.message || 'Could not load inventory.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInventory();
+  }, [supplierId, supplierLoading]);
+
+  const filteredInventory = inventory.filter(item =>
     item.partName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.partNumber?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -74,8 +97,23 @@ export default function SupplierInventory() {
           </div>
         </div>
 
+        {error && (
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
+
+        {loading && (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, index) => (
+              <div key={index} className="h-28 bg-[var(--muted)] rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        )}
+
         <div className="space-y-3">
-          {filteredInventory.map((item) => (
+          {!loading && filteredInventory.map((item) => (
             <button
               key={item.partId}
               onClick={() => router.push(`/supplier/edit-item/${item.partId}`)}
@@ -106,7 +144,7 @@ export default function SupplierInventory() {
           ))}
         </div>
 
-        {filteredInventory.length === 0 && (
+        {!loading && filteredInventory.length === 0 && (
           <div className="text-center py-12">
             <p className="text-[var(--muted-foreground)] mb-2">No items found</p>
             <p className="text-sm text-[var(--muted-foreground)]">

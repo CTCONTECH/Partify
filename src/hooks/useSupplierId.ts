@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAuthContext } from '@/lib/auth/client';
+import { createClient } from '@/lib/supabase/client';
 import { isLiveMode } from '@/lib/config';
 
 const MOCK_SUPPLIER_ID = 's5';
@@ -15,12 +15,24 @@ export function useSupplierId() {
 
     const load = async () => {
       try {
-        const auth = await getAuthContext();
-        if (auth.role === 'supplier' && auth.userId) {
-          setSupplierId(auth.userId);
-        } else {
+        const supabase = createClient();
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData.user;
+
+        if (!user) {
           setSupplierId(null);
+          return;
         }
+
+        const { data: supplier } = await supabase
+          .from('suppliers')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        setSupplierId(supplier?.id ?? null);
+      } catch {
+        setSupplierId(null);
       } finally {
         setLoading(false);
       }

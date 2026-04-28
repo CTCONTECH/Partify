@@ -262,11 +262,34 @@ export class SupabaseInventoryRepository implements InventoryRepository {
   async getSupplierInventory(supplierId: string): Promise<InventoryItem[]> {
     const { data, error } = await supabase()
       .from('supplier_inventory')
-      .select('*')
-      .eq('supplier_id', supplierId);
+      .select(`
+        id,
+        supplier_id,
+        part_id,
+        price,
+        stock,
+        updated_at,
+        parts (
+          part_number,
+          part_name,
+          category
+        )
+      `)
+      .eq('supplier_id', supplierId)
+      .order('updated_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      partId: item.part_id,
+      supplierId: item.supplier_id,
+      price: Number(item.price),
+      stock: item.stock,
+      lastUpdated: item.updated_at?.slice(0, 10) ?? '',
+      partNumber: item.parts?.part_number,
+      partName: item.parts?.part_name,
+      category: item.parts?.category,
+    }));
   }
 
   async updateStock(inventoryId: string, newStock: number): Promise<void> {

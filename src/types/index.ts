@@ -24,11 +24,15 @@ export interface Part {
 }
 
 export interface InventoryItem {
+  id?: string;
   partId: string;
   supplierId: string;
   price: number;
   stock: number;
   lastUpdated: string;
+  partNumber?: string;
+  partName?: string;
+  category?: string;
 }
 
 export interface SupplierResult {
