@@ -28,8 +28,8 @@ function sortByCompatibility(parts: Part[], selectedVehicle: VehicleOption | nul
 export default function PartSearch() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredParts, setFilteredParts] = useState<Part[]>(mockParts);
-  const [isLoading, setIsLoading] = useState(false);
+  const [filteredParts, setFilteredParts] = useState<Part[]>(isLiveMode() ? [] : mockParts);
+  const [isLoading, setIsLoading] = useState(isLiveMode());
   const [vehicle, setVehicle] = useState<VehicleOption | null>(null);
   const [partStats, setPartStats] = useState<Record<string, PartStats>>({});
 
@@ -71,7 +71,7 @@ export default function PartSearch() {
         setFilteredParts(sortByCompatibility(parts, primaryVehicle));
         await loadPartStats(parts);
       } catch {
-        setFilteredParts(mockParts);
+        setFilteredParts([]);
       } finally {
         setIsLoading(false);
       }

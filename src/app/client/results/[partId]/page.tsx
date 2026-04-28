@@ -9,6 +9,7 @@ import { getSupplierResults, mockParts } from '@/data/mockData';
 import { MapPin, SlidersHorizontal } from 'lucide-react';
 import { partsService } from '@/lib/services/parts-service';
 import { useGeolocation } from '@/hooks/useGeolocation';
+import { isLiveMode } from '@/lib/config';
 import { Location, Part, SupplierResult } from '@/types';
 
 const CAPE_TOWN_CBD: Location = { lat: -33.9249, lon: 18.4241 };
@@ -18,8 +19,12 @@ export default function SupplierResults() {
   const router = useRouter();
   const partId = params.partId as string;
   const [sortBy, setSortBy] = useState<'total' | 'price' | 'distance'>('total');
-  const [part, setPart] = useState<Part | null>(mockParts.find(p => p.id === partId) || null);
-  const [suppliers, setSuppliers] = useState<SupplierResult[]>(getSupplierResults(partId));
+  const [part, setPart] = useState<Part | null>(
+    isLiveMode() ? null : mockParts.find(p => p.id === partId) || null
+  );
+  const [suppliers, setSuppliers] = useState<SupplierResult[]>(
+    isLiveMode() ? [] : getSupplierResults(partId)
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [usingFallbackLocation, setUsingFallbackLocation] = useState(false);
   const { location, error: locationError, loading: locationLoading, requestLocation } = useGeolocation(false);
@@ -43,8 +48,13 @@ export default function SupplierResults() {
         setPart(partData);
         setSuppliers(availability);
       } catch {
-        setPart(mockParts.find(p => p.id === partId) || null);
-        setSuppliers(getSupplierResults(partId, locationForSearch));
+        if (isLiveMode()) {
+          setPart(null);
+          setSuppliers([]);
+        } else {
+          setPart(mockParts.find(p => p.id === partId) || null);
+          setSuppliers(getSupplierResults(partId, locationForSearch));
+        }
       } finally {
         setIsLoading(false);
       }

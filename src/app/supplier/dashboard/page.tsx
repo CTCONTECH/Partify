@@ -23,52 +23,62 @@ interface DashboardStats {
 
 const MOCK_INFO: SupplierInfo = { businessName: 'ProAuto Supply', suburb: 'Brackenfell', active: true };
 const MOCK_STATS: DashboardStats = { totalParts: 1245, activeListings: 892, lowStock: 23 };
+const EMPTY_INFO: SupplierInfo = { businessName: '', suburb: '', active: false };
+const EMPTY_STATS: DashboardStats = { totalParts: 0, activeListings: 0, lowStock: 0 };
 
 export default function SupplierDashboard() {
   const router = useRouter();
-  const [info, setInfo] = useState<SupplierInfo>(MOCK_INFO);
-  const [stats, setStats] = useState<DashboardStats>(MOCK_STATS);
+  const [info, setInfo] = useState<SupplierInfo>(isLiveMode() ? EMPTY_INFO : MOCK_INFO);
+  const [stats, setStats] = useState<DashboardStats>(isLiveMode() ? EMPTY_STATS : MOCK_STATS);
+  const [loading, setLoading] = useState(isLiveMode());
 
   useEffect(() => {
     if (!isLiveMode()) return;
 
     const load = async () => {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-      if (!user) return;
+      setLoading(true);
 
-      // Load supplier profile
-      const { data: supplier } = await supabase
-        .from('suppliers')
-        .select('business_name, suburb, active')
-        .eq('id', user.id)
-        .maybeSingle();
+      try {
+        const supabase = createClient();
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData.user;
 
-      if (!supplier) {
-        // Supplier record not set up yet — redirect to onboarding
-        router.replace('/supplier/onboarding');
-        return;
-      }
+        if (!user) {
+          router.replace('/login?next=/supplier/dashboard');
+          return;
+        }
 
-      setInfo({
-        businessName: supplier.business_name,
-        suburb: supplier.suburb,
-        active: supplier.active,
-      });
+        const { data: supplier } = await supabase
+          .from('suppliers')
+          .select('business_name, suburb, active')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      // Load inventory counts
-      const { data: inventory } = await supabase
-        .from('supplier_inventory')
-        .select('id, stock')
-        .eq('supplier_id', user.id);
+        if (!supplier) {
+          router.replace('/supplier/onboarding');
+          return;
+        }
 
-      if (inventory) {
-        setStats({
-          totalParts: inventory.length,
-          activeListings: inventory.filter((i) => i.stock > 0).length,
-          lowStock: inventory.filter((i) => i.stock > 0 && i.stock <= 5).length,
+        setInfo({
+          businessName: supplier.business_name,
+          suburb: supplier.suburb,
+          active: supplier.active,
         });
+
+        const { data: inventory } = await supabase
+          .from('supplier_inventory')
+          .select('id, stock')
+          .eq('supplier_id', user.id);
+
+        if (inventory) {
+          setStats({
+            totalParts: inventory.length,
+            activeListings: inventory.filter((i) => i.stock > 0).length,
+            lowStock: inventory.filter((i) => i.stock > 0 && i.stock <= 5).length,
+          });
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -77,7 +87,7 @@ export default function SupplierDashboard() {
 
   const statCards = [
     { label: 'Total Parts', value: stats.totalParts.toLocaleString(), icon: Package, color: 'bg-blue-500' },
-    { label: 'Revenue (This Month)', value: 'R —', icon: DollarSign, color: 'bg-green-500' },
+    { label: 'Revenue (This Month)', value: 'R -', icon: DollarSign, color: 'bg-green-500' },
     { label: 'Active Listings', value: stats.activeListings.toLocaleString(), icon: TrendingUp, color: 'bg-purple-500' },
     { label: 'Low Stock Items', value: stats.lowStock.toLocaleString(), icon: AlertTriangle, color: 'bg-orange-500' },
   ];
@@ -93,12 +103,22 @@ export default function SupplierDashboard() {
       <TopBar showLogo showNotifications />
 
       <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white">
-          <h2 className="text-2xl mb-2">{info.businessName}</h2>
-          <p className="text-white/90 mb-4">{info.suburb}, Cape Town</p>
-          <div className="flex items-center gap-2">
-            <Badge variant="default" size="sm">{info.active ? 'Active Supplier' : 'Inactive'}</Badge>
-          </div>
+        <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white min-h-36">
+          {loading ? (
+            <div className="space-y-3 animate-pulse">
+              <div className="h-7 w-36 bg-white/30 rounded" />
+              <div className="h-5 w-44 bg-white/25 rounded" />
+              <div className="h-7 w-28 bg-white/30 rounded-full mt-4" />
+            </div>
+          ) : (
+            <>
+              <h2 className="text-2xl mb-2">{info.businessName}</h2>
+              <p className="text-white/90 mb-4">{info.suburb}, Cape Town</p>
+              <div className="flex items-center gap-2">
+                <Badge variant="default" size="sm">{info.active ? 'Active Supplier' : 'Inactive'}</Badge>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -112,8 +132,17 @@ export default function SupplierDashboard() {
                 <div className={`${stat.color} w-10 h-10 rounded-xl flex items-center justify-center mb-3`}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
-                <p className="text-2xl mb-1">{stat.value}</p>
-                <p className="text-sm text-[var(--muted-foreground)]">{stat.label}</p>
+                {loading ? (
+                  <>
+                    <div className="h-7 w-12 bg-[var(--muted)] rounded animate-pulse mb-2" />
+                    <div className="h-4 w-24 bg-[var(--muted)] rounded animate-pulse" />
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl mb-1">{stat.value}</p>
+                    <p className="text-sm text-[var(--muted-foreground)]">{stat.label}</p>
+                  </>
+                )}
               </div>
             );
           })}
