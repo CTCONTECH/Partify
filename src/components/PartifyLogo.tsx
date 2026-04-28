@@ -119,7 +119,7 @@ export function PartifyLogo({
             color: colors.primary
           }}
         >
-          partify
+          Partify
         </span>
       </div>
     );
@@ -158,7 +158,7 @@ export function PartifyLogo({
           color: colors.primary
         }}
       >
-        partify
+        Partify
       </span>
     </div>
   );

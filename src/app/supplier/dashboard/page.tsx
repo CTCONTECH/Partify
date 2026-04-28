@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Badge } from '@/components/Badge';
-import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
+import { AlertTriangle, Archive, ClipboardCheck, PackageCheck } from 'lucide-react';
 import { isLiveMode } from '@/lib/config';
 import { createClient } from '@/lib/supabase/client';
+import { getSupplierNotificationCount } from '@/lib/services/notification-service';
 
 interface SupplierInfo {
   businessName: string;
@@ -19,17 +20,56 @@ interface DashboardStats {
   totalParts: number;
   activeListings: number;
   lowStock: number;
+  monthlyImports: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: 'import' | 'update' | 'lowstock';
+  title: string;
+  detail: string;
+  time: string;
 }
 
 const MOCK_INFO: SupplierInfo = { businessName: 'ProAuto Supply', suburb: 'Brackenfell', active: true };
-const MOCK_STATS: DashboardStats = { totalParts: 1245, activeListings: 892, lowStock: 23 };
+const MOCK_STATS: DashboardStats = { totalParts: 1245, activeListings: 892, lowStock: 23, monthlyImports: 3 };
+const MOCK_ACTIVITY: RecentActivity[] = [
+  { id: 'mock-import', type: 'import', title: 'Part import approved', detail: '5 items processed', time: '2 hours ago' },
+  { id: 'mock-stock', type: 'update', title: 'Front Brake Pads', detail: 'Stock updated to 7', time: '4 hours ago' },
+  { id: 'mock-lowstock', type: 'lowstock', title: 'Spark Plugs', detail: 'Low stock: 2 left', time: '5 hours ago' },
+];
 const EMPTY_INFO: SupplierInfo = { businessName: '', suburb: '', active: false };
-const EMPTY_STATS: DashboardStats = { totalParts: 0, activeListings: 0, lowStock: 0 };
+const EMPTY_STATS: DashboardStats = { totalParts: 0, activeListings: 0, lowStock: 0, monthlyImports: 0 };
+
+function formatActivityTime(value?: string | null) {
+  if (!value) return '';
+
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) return '';
+
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+  if (diffMinutes < 1) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes} min ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+}
+
+function mapActivityType(type: string): RecentActivity['type'] {
+  if (type === 'inventory_import_approved') return 'import';
+  if (type === 'inventory_low_stock') return 'lowstock';
+  return 'update';
+}
 
 export default function SupplierDashboard() {
   const router = useRouter();
   const [info, setInfo] = useState<SupplierInfo>(isLiveMode() ? EMPTY_INFO : MOCK_INFO);
   const [stats, setStats] = useState<DashboardStats>(isLiveMode() ? EMPTY_STATS : MOCK_STATS);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>(isLiveMode() ? [] : MOCK_ACTIVITY);
+  const [notificationCount, setNotificationCount] = useState(0);
   const [loading, setLoading] = useState(isLiveMode());
 
   useEffect(() => {
@@ -75,8 +115,43 @@ export default function SupplierDashboard() {
             totalParts: inventory.length,
             activeListings: inventory.filter((i) => i.stock > 0).length,
             lowStock: inventory.filter((i) => i.stock > 0 && i.stock <= 5).length,
+            monthlyImports: 0,
           });
         }
+
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const { count: monthlyImportCount } = await supabase
+          .from('import_jobs')
+          .select('id', { count: 'exact', head: true })
+          .eq('supplier_id', user.id)
+          .eq('status', 'approved')
+          .eq('source_type', 'csv')
+          .gte('updated_at', startOfMonth.toISOString());
+
+        setStats((current) => ({
+          ...current,
+          monthlyImports: monthlyImportCount || 0,
+        }));
+
+        const { data: activityRows } = await supabase
+          .from('supplier_activity_events')
+          .select('id, event_type, title, detail, created_at')
+          .eq('supplier_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        setRecentActivity((activityRows || []).map((activity) => ({
+          id: activity.id,
+          type: mapActivityType(activity.event_type),
+          title: activity.title,
+          detail: activity.detail || '',
+          time: formatActivityTime(activity.created_at),
+        })));
+
+        setNotificationCount(await getSupplierNotificationCount(user.id));
       } finally {
         setLoading(false);
       }
@@ -86,21 +161,15 @@ export default function SupplierDashboard() {
   }, [router]);
 
   const statCards = [
-    { label: 'Total Parts', value: stats.totalParts.toLocaleString(), icon: Package, color: 'bg-blue-500' },
-    { label: 'Revenue (This Month)', value: 'R -', icon: DollarSign, color: 'bg-green-500' },
-    { label: 'Active Listings', value: stats.activeListings.toLocaleString(), icon: TrendingUp, color: 'bg-purple-500' },
-    { label: 'Low Stock Items', value: stats.lowStock.toLocaleString(), icon: AlertTriangle, color: 'bg-orange-500' },
-  ];
-
-  const recentActivity = [
-    { type: 'sale', item: 'Front Brake Pads', price: 450, time: '2 hours ago' },
-    { type: 'inquiry', item: 'Oil Filter', count: 3, time: '4 hours ago' },
-    { type: 'lowstock', item: 'Spark Plugs', stock: 2, time: '5 hours ago' }
+    { label: 'Total Parts', value: stats.totalParts.toLocaleString(), icon: Archive, color: 'text-slate-700 bg-slate-100' },
+    { label: 'Monthly Catalogue Imports', value: (stats.monthlyImports ?? 0).toLocaleString(), icon: ClipboardCheck, color: 'text-blue-700 bg-blue-50' },
+    { label: 'Active Listings', value: stats.activeListings.toLocaleString(), icon: PackageCheck, color: 'text-green-700 bg-green-50' },
+    { label: 'Low Stock Items', value: stats.lowStock.toLocaleString(), icon: AlertTriangle, color: 'text-orange-700 bg-orange-50' },
   ];
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar showLogo showNotifications />
+      <TopBar showLogo showNotifications notificationCount={notificationCount} />
 
       <div className="p-6 max-w-2xl mx-auto">
         <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white min-h-36">
@@ -129,8 +198,8 @@ export default function SupplierDashboard() {
                 key={stat.label}
                 className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4"
               >
-                <div className={`${stat.color} w-10 h-10 rounded-xl flex items-center justify-center mb-3`}>
-                  <Icon className="w-5 h-5 text-white" />
+                <div className={`${stat.color} w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>
+                  <Icon className="w-5 h-5" />
                 </div>
                 {loading ? (
                   <>
@@ -150,40 +219,56 @@ export default function SupplierDashboard() {
 
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg">Recent Activity</h3>
-          <button className="text-sm text-[var(--primary)] underline">
+          <button
+            onClick={() => router.push('/supplier/activity')}
+            className="text-sm text-[var(--primary)] underline"
+          >
             View All
           </button>
         </div>
 
         <div className="space-y-3">
-          {recentActivity.map((activity, index) => (
+          {loading && (
+            <>
+              {[...Array(3)].map((_, index) => (
+                <div
+                  key={index}
+                  className="h-20 bg-[var(--muted)] rounded-2xl animate-pulse"
+                />
+              ))}
+            </>
+          )}
+
+          {!loading && recentActivity.map((activity) => (
             <div
-              key={index}
+              key={activity.id}
               className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4"
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <h4 className="text-base mb-1">{activity.item}</h4>
-                  {activity.type === 'sale' && (
-                    <p className="text-sm text-[var(--success)]">
-                      Sale: R {activity.price}
-                    </p>
+                  <h4 className="text-base mb-1">{activity.title}</h4>
+                  {activity.type === 'update' && (
+                    <p className="text-sm text-[var(--success)]">{activity.detail}</p>
                   )}
-                  {activity.type === 'inquiry' && (
-                    <p className="text-sm text-[var(--info)]">
-                      {activity.count} customer inquiries
-                    </p>
+                  {activity.type === 'import' && (
+                    <p className="text-sm text-[var(--info)]">{activity.detail}</p>
                   )}
                   {activity.type === 'lowstock' && (
-                    <Badge variant="low-stock" size="sm">
-                      Only {activity.stock} left
-                    </Badge>
+                    <Badge variant="low-stock" size="sm">{activity.detail}</Badge>
                   )}
                 </div>
-                <p className="text-xs text-[var(--muted-foreground)]">{activity.time}</p>
+                <p className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">{activity.time}</p>
               </div>
             </div>
           ))}
+
+          {!loading && recentActivity.length === 0 && (
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+              <p className="text-sm text-[var(--muted-foreground)]">
+                No recent supplier activity yet.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

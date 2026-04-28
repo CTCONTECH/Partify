@@ -8,6 +8,7 @@ interface TopBarProps {
   title?: string;
   showBack?: boolean;
   showNotifications?: boolean;
+  notificationCount?: number;
   showLogo?: boolean;
   onBack?: () => void;
 }
@@ -16,6 +17,7 @@ export function TopBar({
   title,
   showBack,
   showNotifications,
+  notificationCount = 0,
   showLogo = false,
   onBack
 }: TopBarProps) {
@@ -51,10 +53,13 @@ export function TopBar({
         {showNotifications && (
           <button
             onClick={() => router.push('/notifications')}
-            className="p-2 text-[var(--text-primary)] hover:text-[var(--primary)] active:scale-95 transition-all rounded-lg hover:bg-[var(--muted)]"
+            className="relative p-2 text-[var(--text-primary)] hover:text-[var(--primary)] active:scale-95 transition-all rounded-lg hover:bg-[var(--muted)]"
             aria-label="Notifications"
           >
             <Bell className="w-6 h-6" />
+            {notificationCount > 0 && (
+              <span className="absolute right-1.5 top-1.5 min-w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[var(--card)]" />
+            )}
           </button>
         )}
       </div>
