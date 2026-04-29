@@ -1,6 +1,7 @@
 interface Option {
   value: string;
   label: string;
+  featured?: boolean;
 }
 
 interface SegmentedControlProps {
@@ -19,7 +20,9 @@ export function SegmentedControl({ options, value, onChange }: SegmentedControlP
           className={`
             px-4 py-2 rounded-md text-sm transition-all
             ${value === option.value
-              ? 'bg-[var(--card)] text-[var(--foreground)] shadow-sm'
+              ? option.featured
+                ? 'bg-[var(--primary)] text-white shadow-sm'
+                : 'bg-[var(--card)] text-[var(--foreground)] shadow-sm'
               : 'text-[var(--muted-foreground)]'
             }
           `}

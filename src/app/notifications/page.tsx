@@ -5,26 +5,39 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { createClient } from '@/lib/supabase/client';
 import {
+  ClientNotification,
+  getClientNotifications,
   getSupplierNotifications,
+  markClientNotificationRead,
   markSupplierNotificationRead,
   SupplierNotification
 } from '@/lib/services/notification-service';
-import { AlertTriangle, ClipboardList, Package, XCircle } from 'lucide-react';
+import { AlertTriangle, Car, ClipboardList, Package, Ticket, Wrench, XCircle } from 'lucide-react';
 
-function notificationIcon(type: SupplierNotification['type']) {
+type AppNotification = SupplierNotification | ClientNotification;
+type NotificationMode = 'client' | 'supplier';
+
+function notificationIcon(type: AppNotification['type']) {
   if (type === 'out-of-stock') return XCircle;
   if (type === 'import-review') return ClipboardList;
   if (type === 'import-error') return AlertTriangle;
+  if (type === 'vehicle-setup') return Car;
+  if (type === 'coupon-expiring') return Ticket;
+  if (type === 'compatible-part') return Wrench;
   return Package;
 }
 
-function notificationTone(type: SupplierNotification['type']) {
+function notificationTone(type: AppNotification['type']) {
   if (type === 'out-of-stock' || type === 'import-error') {
     return 'bg-[var(--out-of-stock-bg)] text-[var(--out-of-stock)]';
   }
 
-  if (type === 'import-review') {
+  if (type === 'import-review' || type === 'coupon-expiring') {
     return 'bg-[var(--best-price-bg)] text-[var(--info)]';
+  }
+
+  if (type === 'compatible-part') {
+    return 'bg-[var(--available-bg)] text-[var(--available)]';
   }
 
   return 'bg-[var(--warning-bg)] text-[var(--warning)]';
@@ -32,7 +45,8 @@ function notificationTone(type: SupplierNotification['type']) {
 
 export default function Notifications() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<SupplierNotification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [mode, setMode] = useState<NotificationMode>('client');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,11 +72,13 @@ export default function Notifications() {
           .maybeSingle();
 
         if (supplier) {
+          setMode('supplier');
           setNotifications(await getSupplierNotifications(user.id));
           return;
         }
 
-        setNotifications([]);
+        setMode('client');
+        setNotifications(await getClientNotifications(user.id));
       } catch (err: any) {
         setError(err?.message || 'Could not load notifications.');
       } finally {
@@ -76,15 +92,19 @@ export default function Notifications() {
   async function handleNotificationClick(id: string) {
     const supabase = createClient();
     const { data: userData } = await supabase.auth.getUser();
-    const supplierId = userData.user?.id;
-    if (!supplierId) return;
+    const userId = userData.user?.id;
+    if (!userId) return;
 
     setNotifications((current) => current.map((notification) => (
       notification.id === id ? { ...notification, read: true } : notification
     )));
 
     try {
-      await markSupplierNotificationRead(supplierId, id);
+      if (mode === 'supplier') {
+        await markSupplierNotificationRead(userId, id);
+      } else {
+        await markClientNotificationRead(userId, id);
+      }
     } catch (err: any) {
       setError(err?.message || 'Could not update notification.');
       setNotifications((current) => current.map((notification) => (
@@ -153,7 +173,9 @@ export default function Notifications() {
           <div className="text-center py-12">
             <p className="text-[var(--muted-foreground)] mb-2">No notifications</p>
             <p className="text-sm text-[var(--muted-foreground)]">
-              Supplier alerts will appear here when stock, imports, or requests need attention.
+              {mode === 'supplier'
+                ? 'Supplier alerts will appear here when stock, imports, or requests need attention.'
+                : 'Saved parts, coupons, vehicle reminders, and compatible part updates will appear here.'}
             </p>
           </div>
         )}

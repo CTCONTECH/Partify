@@ -5,27 +5,97 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
+import { createClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/client';
 import { vehicleService } from '@/lib/services/vehicle-service';
 import { formatVehicle } from '@/lib/vehicle-catalog';
-import { User, Car, Bell, HelpCircle, LogOut, ChevronRight } from 'lucide-react';
+import { AlertCircle, Car, Bell, HelpCircle, LogOut, ChevronRight, MapPin, Search } from 'lucide-react';
+
+interface ClientProfileInfo {
+  name: string;
+  email: string;
+  vehicle: string | null;
+}
+
+const DEFAULT_PROFILE: ClientProfileInfo = {
+  name: 'Client Profile',
+  email: '',
+  vehicle: null,
+};
+
+function ClientProfileMark() {
+  return (
+    <div className="relative w-20 h-20 mx-auto mb-4">
+      <div className="absolute inset-0 rounded-[1.75rem] bg-gradient-to-br from-[var(--primary)] to-[#D84315] -rotate-3" />
+      <div className="absolute inset-1 rounded-[1.5rem] bg-[var(--card)] border border-white/70 flex items-center justify-center">
+        <svg
+          viewBox="0 0 64 64"
+          className="w-12 h-12"
+          fill="none"
+          aria-label="Client profile"
+        >
+          <path
+            d="M32 6C41.4 6 48 12.7 48 22.1C48 35 32 55 32 55C32 55 16 35 16 22.1C16 12.7 22.6 6 32 6Z"
+            fill="#FF5722"
+          />
+          <path
+            d="M25 18H34.5C39.1 18 42 20.8 42 25C42 29.2 39.1 32 34.5 32H29.5V41H25V18ZM29.5 22V28H34.2C36.2 28 37.4 26.8 37.4 25C37.4 23.2 36.2 22 34.2 22H29.5Z"
+            fill="white"
+          />
+          <circle cx="32" cy="48" r="3" fill="white" />
+        </svg>
+      </div>
+      <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-xl bg-white border border-[var(--border)] flex items-center justify-center shadow-sm">
+        <Search className="w-4 h-4 text-[var(--primary)]" />
+      </div>
+    </div>
+  );
+}
 
 export default function ClientProfile() {
   const router = useRouter();
-  const [vehicle, setVehicle] = useState<string | null>(null);
+  const [profile, setProfile] = useState<ClientProfileInfo>(DEFAULT_PROFILE);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadVehicle = async () => {
+    const loadProfile = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
+        const supabase = createClient();
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData.user;
+
+        if (!user) {
+          router.replace('/login?next=/client/profile');
+          return;
+        }
+
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('name, email')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+
         const primaryVehicle = await vehicleService.getPrimaryVehicle();
-        setVehicle(primaryVehicle ? formatVehicle(primaryVehicle) : null);
-      } catch {
-        setVehicle(null);
+        setProfile({
+          name: profileData?.name || user.user_metadata?.name || 'Partify Client',
+          email: profileData?.email || user.email || '',
+          vehicle: primaryVehicle ? formatVehicle(primaryVehicle) : null,
+        });
+      } catch (err: any) {
+        setError(err?.message || 'Could not load client profile.');
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadVehicle();
-  }, []);
+    loadProfile();
+  }, [router]);
 
   const handleLogout = async () => {
     await signOut();
@@ -39,12 +109,23 @@ export default function ClientProfile() {
 
       <div className="p-6 max-w-2xl mx-auto">
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-6 mb-6 text-center">
-          <div className="bg-[var(--primary)] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-10 h-10 text-white" />
+          <ClientProfileMark />
+          <h2 className="text-xl mb-1">{loading ? 'Loading...' : profile.name}</h2>
+          {profile.email && (
+            <p className="text-sm text-[var(--muted-foreground)] mb-2">{profile.email}</p>
+          )}
+          <div className="flex items-center justify-center gap-2 text-sm text-[var(--muted-foreground)]">
+            <MapPin className="w-4 h-4" />
+            <span>Cape Town</span>
           </div>
-          <h2 className="text-xl mb-1">Client User</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">client@example.com</p>
         </div>
+
+        {error && (
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4 mb-6">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
 
         <div className="space-y-3 mb-6">
           <button
@@ -57,7 +138,7 @@ export default function ClientProfile() {
             <div className="flex-1 text-left">
               <h4 className="text-base mb-1">My Vehicle</h4>
               <p className="text-sm text-[var(--muted-foreground)]">
-                {vehicle || 'Not set'}
+                {loading ? 'Loading...' : profile.vehicle || 'Not set'}
               </p>
             </div>
             <ChevronRight className="w-5 h-5 text-[var(--muted-foreground)]" />
@@ -77,6 +158,7 @@ export default function ClientProfile() {
           </button>
 
           <button
+            onClick={() => router.push('/client/help')}
             className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">

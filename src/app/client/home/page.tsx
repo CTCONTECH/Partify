@@ -5,21 +5,33 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
+import { createClient } from '@/lib/supabase/client';
 import { vehicleService } from '@/lib/services/vehicle-service';
+import { getClientNotificationCount } from '@/lib/services/notification-service';
 import { formatVehicle } from '@/lib/vehicle-catalog';
 import { Search, Car, History, TrendingUp } from 'lucide-react';
 
 export default function ClientHome() {
   const router = useRouter();
   const [vehicle, setVehicle] = useState<string | null>(null);
+  const [vehicleLoading, setVehicleLoading] = useState(true);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     const loadVehicle = async () => {
       try {
         const primaryVehicle = await vehicleService.getPrimaryVehicle();
         setVehicle(primaryVehicle ? formatVehicle(primaryVehicle) : null);
+
+        const supabase = createClient();
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user?.id) {
+          setNotificationCount(await getClientNotificationCount(userData.user.id));
+        }
       } catch {
         setVehicle(null);
+      } finally {
+        setVehicleLoading(false);
       }
     };
 
@@ -28,7 +40,7 @@ export default function ClientHome() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar showLogo showNotifications />
+      <TopBar showLogo showNotifications notificationCount={notificationCount} />
 
       <div className="p-6 max-w-2xl mx-auto">
         <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white">
@@ -45,7 +57,19 @@ export default function ClientHome() {
           </Button>
         </div>
 
-        {vehicle ? (
+        {vehicleLoading ? (
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-[var(--muted)] p-2 rounded-lg">
+                <Car className="w-5 h-5 text-[var(--muted-foreground)]" />
+              </div>
+              <div className="flex-1">
+                <div className="h-4 w-24 bg-[var(--muted)] rounded mb-2" />
+                <div className="h-5 w-44 bg-[var(--muted)] rounded" />
+              </div>
+            </div>
+          </div>
+        ) : vehicle ? (
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-6">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -102,7 +126,7 @@ export default function ClientHome() {
           </button>
 
           <button
-            onClick={() => router.push('/client/search')}
+            onClick={() => router.push('/client/popular')}
             className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">
