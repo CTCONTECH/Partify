@@ -11,21 +11,35 @@ export default function ForgotPassword() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    setSubmitting(true);
     setError(null);
     try {
       const supabase = createClient();
+      const trimmedEmail = email.trim();
+
+      const { data: accountExists, error: lookupError } = await supabase
+        .rpc('can_request_password_reset', { p_email: trimmedEmail });
+
+      if (lookupError) throw lookupError;
+      if (!accountExists) {
+        throw new Error('No Partify account is linked to this email address.');
+      }
+
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetError) throw resetError;
       setSent(true);
     } catch (err: any) {
       setError(err?.message || 'Could not send reset email.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -75,7 +89,7 @@ export default function ForgotPassword() {
           />
 
           <Button type="submit" fullWidth size="lg" className="mt-6">
-            Send Reset Link
+            {submitting ? 'Checking account...' : 'Send Reset Link'}
           </Button>
 
           {error && (

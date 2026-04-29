@@ -9,6 +9,18 @@ export default function Splash() {
   const router = useRouter();
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const hasRecoveryCode = searchParams.has('code');
+      const hasRecoveryTokens = hashParams.has('access_token') && hashParams.has('refresh_token');
+
+      if (hasRecoveryCode || hasRecoveryTokens) {
+        router.replace(`/reset-password${window.location.search}${window.location.hash}`);
+        return;
+      }
+    }
+
     const timer = setTimeout(() => {
       const route = async () => {
         const auth = await getAuthContext();
