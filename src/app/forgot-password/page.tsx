@@ -7,6 +7,16 @@ import { Input } from '@/components/Input';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, ArrowLeft } from 'lucide-react';
 
+function friendlyResetError(message?: string) {
+  const lower = (message || '').toLowerCase();
+
+  if (lower.includes('rate limit')) {
+    return 'Too many reset emails requested. Please wait a few minutes before trying again.';
+  }
+
+  return message || 'Could not send reset email.';
+}
+
 export default function ForgotPassword() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -37,7 +47,7 @@ export default function ForgotPassword() {
       if (resetError) throw resetError;
       setSent(true);
     } catch (err: any) {
-      setError(err?.message || 'Could not send reset email.');
+      setError(friendlyResetError(err?.message));
     } finally {
       setSubmitting(false);
     }
