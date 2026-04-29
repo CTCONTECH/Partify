@@ -12,13 +12,17 @@ export interface SupplierNotification {
   read: boolean;
 }
 
-const READ_NOTIFICATION_KEY = 'partify:supplier-read-notifications';
+const LOCAL_READ_PREFIX = 'partify:supplier-read-notifications';
 
-function getReadNotificationIds() {
+function localReadKey(supplierId: string) {
+  return `${LOCAL_READ_PREFIX}:${supplierId}`;
+}
+
+function getLocalReadIds(supplierId: string) {
   if (typeof window === 'undefined') return new Set<string>();
 
   try {
-    const value = window.localStorage.getItem(READ_NOTIFICATION_KEY);
+    const value = window.localStorage.getItem(localReadKey(supplierId));
     const ids = value ? JSON.parse(value) : [];
     return new Set<string>(Array.isArray(ids) ? ids : []);
   } catch {
@@ -26,12 +30,47 @@ function getReadNotificationIds() {
   }
 }
 
-export function markSupplierNotificationRead(id: string) {
+function markLocalRead(supplierId: string, id: string) {
   if (typeof window === 'undefined') return;
 
-  const ids = getReadNotificationIds();
+  const ids = getLocalReadIds(supplierId);
   ids.add(id);
-  window.localStorage.setItem(READ_NOTIFICATION_KEY, JSON.stringify([...ids]));
+  window.localStorage.setItem(localReadKey(supplierId), JSON.stringify([...ids]));
+}
+
+async function getReadNotificationIds(supplierId: string) {
+  const supabase = createClient();
+  const readIds = getLocalReadIds(supplierId);
+
+  const { data, error } = await supabase
+    .from('supplier_notification_reads')
+    .select('notification_id')
+    .eq('supplier_id', supplierId);
+
+  if (error) {
+    console.warn('Notification read state unavailable:', error.message);
+    return readIds;
+  }
+
+  (data || []).forEach((row: any) => readIds.add(row.notification_id));
+  return readIds;
+}
+
+export async function markSupplierNotificationRead(supplierId: string, id: string) {
+  const supabase = createClient();
+  markLocalRead(supplierId, id);
+
+  const { error } = await supabase
+    .from('supplier_notification_reads')
+    .upsert({
+      supplier_id: supplierId,
+      notification_id: id,
+      read_at: new Date().toISOString(),
+    });
+
+  if (error) {
+    console.warn('Could not mark notification as read:', error.message);
+  }
 }
 
 export function getUnreadSupplierNotificationCount(notifications: SupplierNotification[]) {
@@ -62,7 +101,7 @@ function joinedPartName(parts: any) {
 
 export async function getSupplierNotifications(supplierId: string): Promise<SupplierNotification[]> {
   const supabase = createClient();
-  const readIds = getReadNotificationIds();
+  const readIds = await getReadNotificationIds(supplierId);
 
   const [{ data: inventory, error: inventoryError }, { data: imports, error: importsError }] = await Promise.all([
     supabase

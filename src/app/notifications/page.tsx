@@ -73,11 +73,24 @@ export default function Notifications() {
     loadNotifications();
   }, [router]);
 
-  function handleNotificationClick(id: string) {
-    markSupplierNotificationRead(id);
+  async function handleNotificationClick(id: string) {
+    const supabase = createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    const supplierId = userData.user?.id;
+    if (!supplierId) return;
+
     setNotifications((current) => current.map((notification) => (
       notification.id === id ? { ...notification, read: true } : notification
     )));
+
+    try {
+      await markSupplierNotificationRead(supplierId, id);
+    } catch (err: any) {
+      setError(err?.message || 'Could not update notification.');
+      setNotifications((current) => current.map((notification) => (
+        notification.id === id ? { ...notification, read: false } : notification
+      )));
+    }
   }
 
   return (

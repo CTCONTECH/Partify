@@ -23,6 +23,36 @@ const DEFAULT_PROFILE: SupplierProfileInfo = {
   suburb: '',
 };
 
+function SupplierProfileMark() {
+  return (
+    <div className="relative w-20 h-20 mx-auto mb-4">
+      <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[var(--primary)] to-[#D84315] rotate-3" />
+      <div className="absolute inset-1 rounded-3xl bg-[var(--card)] border border-white/70 flex items-center justify-center">
+        <svg
+          viewBox="0 0 64 64"
+          className="w-12 h-12"
+          fill="none"
+          aria-label="Supplier profile"
+        >
+          <path
+            d="M32 6C41.4 6 48 12.7 48 22.1C48 35 32 55 32 55C32 55 16 35 16 22.1C16 12.7 22.6 6 32 6Z"
+            fill="#FF5722"
+          />
+          <path
+            d="M25 18H34.5C39.1 18 42 20.8 42 25C42 29.2 39.1 32 34.5 32H29.5V41H25V18ZM29.5 22V28H34.2C36.2 28 37.4 26.8 37.4 25C37.4 23.2 36.2 22 34.2 22H29.5Z"
+            fill="white"
+          />
+          <path d="M22 45H42" stroke="white" strokeWidth="3" strokeLinecap="round" />
+          <path d="M25 50H39" stroke="white" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+      </div>
+      <div className="absolute -right-1 -bottom-1 w-7 h-7 rounded-xl bg-white border border-[var(--border)] flex items-center justify-center shadow-sm">
+        <Store className="w-4 h-4 text-[var(--primary)]" />
+      </div>
+    </div>
+  );
+}
+
 export default function SupplierProfile() {
   const router = useRouter();
   const [profile, setProfile] = useState<SupplierProfileInfo>(DEFAULT_PROFILE);
@@ -74,9 +104,6 @@ export default function SupplierProfile() {
   }, [router]);
 
   const handleLogout = async () => {
-    if (typeof window !== 'undefined') {
-      localStorage.clear();
-    }
     await signOut();
     router.replace('/login');
     router.refresh();
@@ -88,9 +115,7 @@ export default function SupplierProfile() {
 
       <div className="p-6 max-w-2xl mx-auto">
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-6 mb-6 text-center">
-          <div className="bg-[var(--secondary)] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Store className="w-10 h-10 text-white" />
-          </div>
+          <SupplierProfileMark />
           <h2 className="text-xl mb-1">{loading ? 'Loading...' : profile.businessName}</h2>
           {profile.email && (
             <p className="text-sm text-[var(--muted-foreground)] mb-2">{profile.email}</p>
@@ -144,6 +169,7 @@ export default function SupplierProfile() {
           </button>
 
           <button
+            onClick={() => router.push('/supplier/help')}
             className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">

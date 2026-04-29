@@ -28,9 +28,6 @@ export default function ClientProfile() {
   }, []);
 
   const handleLogout = async () => {
-    if (typeof window !== 'undefined') {
-      localStorage.clear();
-    }
     await signOut();
     router.replace('/login');
     router.refresh();

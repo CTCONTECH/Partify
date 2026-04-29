@@ -9,7 +9,7 @@ import { Badge } from '@/components/Badge';
 import { useSupplierId } from '@/hooks/useSupplierId';
 import { supplierService } from '@/lib/services/supplier-service';
 import { InventoryItem } from '@/types';
-import { AlertCircle, Ban, DollarSign, FileUp, Minus, Package, Plus } from 'lucide-react';
+import { AlertCircle, Ban, FileUp, Minus, Package, Plus } from 'lucide-react';
 
 function stockVariant(stock: number) {
   if (stock === 0) return 'out-of-stock';
@@ -186,7 +186,7 @@ export default function EditInventoryItem() {
                     setPrice(e.target.value);
                     setSaved(false);
                   }}
-                  leftIcon={<DollarSign className="w-5 h-5" />}
+                  leftIcon={<span className="text-sm font-medium">R</span>}
                   required
                 />
 

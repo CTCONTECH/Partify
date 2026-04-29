@@ -6,8 +6,8 @@ import { TopBar } from '@/components/TopBar';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { createClient } from '@/lib/supabase/client';
-import { useGeolocation } from '@/hooks/useGeolocation';
-import { Building2, MapPin, Navigation } from 'lucide-react';
+import { geocodeBusinessAddress, GeocodedAddress } from '@/lib/geocoding';
+import { Building2, CheckCircle2, MapPin, Navigation } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,13 +19,14 @@ interface BusinessForm {
 
 export default function SupplierBusinessDetailsPage() {
   const router = useRouter();
-  const { location, error: locationError, loading: locationLoading, requestLocation } = useGeolocation(false);
   const [form, setForm] = useState<BusinessForm>({
     businessName: '',
     address: '',
     suburb: '',
   });
   const [loading, setLoading] = useState(true);
+  const [hasSavedLocation, setHasSavedLocation] = useState(false);
+  const [verifiedAddress, setVerifiedAddress] = useState<GeocodedAddress | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +48,7 @@ export default function SupplierBusinessDetailsPage() {
 
         const { data: supplier, error: supplierError } = await supabase
           .from('suppliers')
-          .select('business_name, address, suburb')
+          .select('business_name, address, suburb, coordinates')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -63,6 +64,7 @@ export default function SupplierBusinessDetailsPage() {
           address: supplier.address,
           suburb: supplier.suburb,
         });
+        setHasSavedLocation(Boolean(supplier.coordinates));
       } catch (err: any) {
         setError(err?.message || 'Could not load business details.');
       } finally {
@@ -86,15 +88,14 @@ export default function SupplierBusinessDetailsPage() {
 
       if (userError || !user) throw new Error('Not authenticated');
 
+      const resolvedLocation = await geocodeBusinessAddress(form.address, form.suburb);
+
       const updatePayload: Record<string, string> = {
         business_name: form.businessName.trim(),
         address: form.address.trim(),
         suburb: form.suburb.trim(),
+        coordinates: `SRID=4326;POINT(${resolvedLocation.lon} ${resolvedLocation.lat})`,
       };
-
-      if (location) {
-        updatePayload.coordinates = `SRID=4326;POINT(${location.lon} ${location.lat})`;
-      }
 
       const { error: updateError } = await supabase
         .from('suppliers')
@@ -104,6 +105,8 @@ export default function SupplierBusinessDetailsPage() {
       if (updateError) throw updateError;
 
       setSaved(true);
+      setHasSavedLocation(true);
+      setVerifiedAddress(resolvedLocation);
     } catch (err: any) {
       setError(err?.message || 'Could not save business details.');
     } finally {
@@ -117,6 +120,21 @@ export default function SupplierBusinessDetailsPage() {
 
       <div className="p-6 max-w-md mx-auto">
         <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="w-5 h-5 text-[var(--success)] flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Primary business address</p>
+                <p className="text-sm text-[var(--foreground)] mt-1">
+                  {form.address || 'No street address saved'}
+                </p>
+                <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                  {form.suburb ? `${form.suburb}, Cape Town` : 'Suburb not set'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <Input
             type="text"
             label="Business Name"
@@ -154,21 +172,21 @@ export default function SupplierBusinessDetailsPage() {
             <div className="flex items-start gap-3">
               <Navigation className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium">Business location</p>
+                <p className="text-sm font-medium">Distance location</p>
                 <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                  {location
-                    ? 'New location captured. Save changes to update supplier distance estimates.'
-                    : locationError || 'Keep your saved location, or update it while you are at the business.'}
+                  {hasSavedLocation
+                    ? 'Coordinates are saved from the primary business address.'
+                    : 'Save changes to verify the primary address and create supplier distance coordinates.'}
+                </p>
+                {verifiedAddress && (
+                  <p className="text-xs text-[var(--success)] mt-2">
+                    Verified: {verifiedAddress.label}
+                  </p>
+                )}
+                <p className="text-xs text-[var(--muted-foreground)] mt-2">
+                  This address powers nearest-supplier results and is shown to customers.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => void requestLocation().catch(() => undefined)}
-                disabled={locationLoading || loading}
-                className="text-sm text-[var(--primary)] underline disabled:opacity-60"
-              >
-                {locationLoading ? 'Locating...' : 'Update'}
-              </button>
             </div>
           </div>
 
@@ -190,7 +208,7 @@ export default function SupplierBusinessDetailsPage() {
             fullWidth
             disabled={loading || submitting}
           >
-            {submitting ? 'Saving...' : 'Save Changes'}
+            {submitting ? 'Verifying address...' : 'Save Changes'}
           </Button>
         </form>
       </div>

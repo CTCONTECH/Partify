@@ -14,7 +14,6 @@ import { Part } from '@/types';
 import {
   Search,
   Package,
-  DollarSign,
   Hash,
   ChevronRight,
   AlertCircle,
@@ -275,7 +274,7 @@ function PricingForm({ part, supplierId, onBack }: PricingFormProps) {
           setFormData({ ...formData, price: e.target.value });
           if (errors.price) setErrors(prev => ({ ...prev, price: '' }));
         }}
-        leftIcon={<DollarSign className="w-4 h-4" />}
+        leftIcon={<span className="text-sm font-medium">R</span>}
         error={errors.price}
         required
       />
@@ -465,7 +464,7 @@ function ManualCandidateForm({ supplierId, initialQuery, onBack }: ManualCandida
         placeholder="0.00"
         value={formData.price}
         onChange={e => setFormData({ ...formData, price: e.target.value })}
-        leftIcon={<DollarSign className="w-4 h-4" />}
+        leftIcon={<span className="text-sm font-medium">R</span>}
         error={errors.price}
         required
       />
