@@ -28,6 +28,7 @@ export interface CouponRepository {
     supplierId: string,
     partId: string,
     price: number,
+    inventoryId?: string,
     userLocation?: Location
   ): Promise<Coupon>;
   getCoupon(couponId: string): Promise<Coupon | null>;

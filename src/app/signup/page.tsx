@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -161,6 +162,18 @@ function SignupForm() {
           {error && (
             <p className="text-sm text-[var(--destructive)]">{error}</p>
           )}
+
+          <p className="text-xs text-center text-[var(--muted-foreground)] leading-5">
+            By creating an account, you agree to Partify&apos;s{' '}
+            <Link href="/terms" className="text-[var(--primary)] underline">
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="text-[var(--primary)] underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </form>
         )}
 

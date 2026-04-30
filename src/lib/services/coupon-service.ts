@@ -16,6 +16,7 @@ export class CouponService {
     supplierId: string;
     partId: string;
     price: number;
+    inventoryId?: string;
     userLocation?: Location;
   }): Promise<Coupon> {
     const coupon = await this.couponRepo.issueCoupon(
@@ -23,6 +24,7 @@ export class CouponService {
       params.supplierId,
       params.partId,
       params.price,
+      params.inventoryId,
       params.userLocation
     );
 

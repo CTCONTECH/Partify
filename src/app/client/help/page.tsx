@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { Button } from '@/components/Button';
@@ -91,6 +92,18 @@ export default function ClientHelpPage() {
           >
             WhatsApp Support
           </Button>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
+          <h3 className="text-base mb-2">Legal and privacy</h3>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <Link href="/terms" className="text-[var(--primary)] underline">
+              Terms of Service
+            </Link>
+            <Link href="/privacy" className="text-[var(--primary)] underline">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
 
         <Button

@@ -1,51 +1,79 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { Button } from '@/components/Button';
-import { mockParts, mockInventory, mockSuppliers } from '@/data/mockData';
-import { createCoupon, formatCouponCode, getCouponTimeRemaining, updateCouponState } from '@/lib/coupon';
+import { getAuthContext } from '@/lib/auth/client';
+import { formatCouponCode, getCouponTimeRemaining } from '@/lib/coupon';
 import { openMapsNavigation } from '@/lib/geolocation';
+import { couponService } from '@/lib/services/coupon-service';
+import {
+  getLiveCouponContext,
+  getOrIssueLiveCoupon,
+  LiveCouponContext,
+} from '@/lib/services/live-coupon-screen-service';
+import { useGeolocation } from '@/hooks/useGeolocation';
 import { Coupon } from '@/types';
-import { MapPin, Copy, Check, Navigation, Clock, Store, Tag } from 'lucide-react';
+import { AlertCircle, MapPin, Copy, Check, Navigation, Clock, Store, Tag } from 'lucide-react';
 
 export function CouponScreen() {
   const params = useParams();
+  const router = useRouter();
   const supplierId = params.supplierId as string | undefined;
   const partId = params.partId as string | undefined;
+  const { location } = useGeolocation(false);
 
+  const [context, setContext] = useState<LiveCouponContext | null>(null);
   const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [copied, setCopied] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
-
-  const supplier = supplierId ? mockSuppliers.find(s => s.id === supplierId) : null;
-  const part = partId ? mockParts.find(p => p.id === partId) : null;
-  const inventoryItem = (supplierId && partId) ? mockInventory.find(
-    inv => inv.partId === partId && inv.supplierId === supplierId
-  ) : null;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!supplierId || !partId) return;
+    const loadCoupon = async () => {
+      if (!supplierId || !partId) {
+        setError('Coupon link is incomplete.');
+        setLoading(false);
+        return;
+      }
 
-    // Generate or retrieve coupon
-    const storedCoupon = localStorage.getItem(`coupon_${supplierId}_${partId}`);
+      setLoading(true);
+      setError(null);
 
-    if (storedCoupon) {
-      const parsed = JSON.parse(storedCoupon);
-      setCoupon(parsed);
-      updateCouponState(parsed.id, 'opened');
-    } else if (inventoryItem) {
-      const newCoupon = createCoupon(
-        'user_123', // Mock user ID
-        supplierId,
-        partId,
-        inventoryItem.price,
-        5 // 5% discount
-      );
-      setCoupon(newCoupon);
-      localStorage.setItem(`coupon_${supplierId}_${partId}`, JSON.stringify(newCoupon));
-      updateCouponState(newCoupon.id, 'opened');
-    }
-  }, [supplierId, partId, inventoryItem]);
+      try {
+        const auth = await getAuthContext();
+        if (!auth.userId) {
+          router.replace(`/login?next=/client/coupon/${supplierId}/${partId}`);
+          return;
+        }
+
+        const liveContext = await getLiveCouponContext(supplierId, partId);
+        if (!liveContext) {
+          setError('This part is no longer available from this supplier.');
+          return;
+        }
+
+        const liveCoupon = await getOrIssueLiveCoupon({
+          userId: auth.userId,
+          supplierId,
+          partId,
+          inventoryId: liveContext.inventory.id,
+          price: liveContext.inventory.price,
+          userLocation: location || undefined,
+        });
+
+        await couponService.markCouponViewed(liveCoupon.id, auth.userId);
+        setContext(liveContext);
+        setCoupon(liveCoupon);
+      } catch (err: any) {
+        setError(err?.message || 'Could not issue coupon. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCoupon();
+  }, [supplierId, partId, router, location]);
 
   useEffect(() => {
     if (!coupon) return;
@@ -55,7 +83,7 @@ export function CouponScreen() {
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 60000); // Update every minute
+    const interval = setInterval(updateTimer, 60000);
 
     return () => clearInterval(interval);
   }, [coupon]);
@@ -67,24 +95,42 @@ export function CouponScreen() {
       await navigator.clipboard.writeText(coupon.code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      setError('Could not copy coupon code.');
     }
   };
 
-  const handleStartNavigation = () => {
-    if (!supplier || !coupon) return;
+  const handleStartNavigation = async () => {
+    if (!context || !coupon) return;
 
-    updateCouponState(coupon.id, 'navigation_started');
-    openMapsNavigation(supplier.coordinates, supplier.name);
+    const auth = await getAuthContext();
+    if (auth.userId) {
+      await couponService.markNavigationStarted(coupon.id, auth.userId);
+    }
+
+    openMapsNavigation(context.supplier.coordinates, context.supplier.name);
   };
 
-  if (!supplier || !part || !inventoryItem || !coupon) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[var(--background)]">
         <TopBar title="Coupon" showBack />
-        <div className="p-6 text-center">
-          <p className="text-[var(--muted-foreground)]">Coupon not found</p>
+        <div className="p-6 max-w-2xl mx-auto">
+          <p className="text-sm text-[var(--muted-foreground)]">Preparing your coupon...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !context || !coupon) {
+    return (
+      <div className="min-h-screen bg-[var(--background)]">
+        <TopBar title="Coupon" showBack />
+        <div className="p-6 max-w-2xl mx-auto">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p className="text-sm">{error || 'Coupon not found.'}</p>
+          </div>
         </div>
       </div>
     );
@@ -95,35 +141,32 @@ export function CouponScreen() {
       <TopBar title="Your Discount Coupon" showBack />
 
       <div className="p-6 max-w-2xl mx-auto space-y-4">
-        {/* Success Banner */}
         <div className="bg-gradient-to-br from-[var(--success)] to-green-600 rounded-3xl p-6 text-white text-center">
           <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
             <Tag className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl mb-2">Coupon Generated!</h2>
-          <p className="text-white/90">You saved R {coupon.discountAmount.toFixed(2)}</p>
+          <h2 className="text-2xl mb-2">Coupon Ready</h2>
+          <p className="text-white/90">You save R {coupon.discountAmount.toFixed(2)}</p>
         </div>
 
-        {/* Supplier Info */}
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
           <div className="flex items-start gap-3 mb-3">
             <div className="bg-[var(--secondary)] p-2 rounded-lg">
               <Store className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg mb-1">{supplier.name}</h3>
+              <h3 className="text-lg mb-1">{context.supplier.name}</h3>
               <div className="flex items-start gap-2 text-sm text-[var(--muted-foreground)]">
                 <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span>{supplier.address}</span>
+                <span>{context.supplier.address}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Part & Pricing */}
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
-          <p className="text-sm text-[var(--muted-foreground)] mb-1">Part #{part.partNumber}</p>
-          <h3 className="text-lg mb-3">{part.partName}</h3>
+          <p className="text-sm text-[var(--muted-foreground)] mb-1">Part #{context.part.partNumber}</p>
+          <h3 className="text-lg mb-3">{context.part.partName}</h3>
 
           <div className="space-y-2 py-3 border-t border-b border-[var(--border)]">
             <div className="flex items-center justify-between">
@@ -143,7 +186,6 @@ export function CouponScreen() {
           </div>
         </div>
 
-        {/* Coupon Code */}
         <div className="bg-gradient-to-br from-[var(--primary)] to-[#BF360C] rounded-2xl p-6 text-white">
           <div className="text-center mb-4">
             <p className="text-white/80 text-sm mb-2">Your Coupon Code</p>
@@ -159,7 +201,7 @@ export function CouponScreen() {
               {copied ? (
                 <>
                   <Check className="w-4 h-4" />
-                  Copied!
+                  Copied
                 </>
               ) : (
                 <>
@@ -176,18 +218,16 @@ export function CouponScreen() {
           </div>
         </div>
 
-        {/* Instructions */}
         <div className="bg-[var(--accent)] border border-[var(--primary)]/20 rounded-2xl p-4">
           <h4 className="text-base mb-3">How to Redeem</h4>
           <ol className="space-y-2 text-sm text-[var(--muted-foreground)] list-decimal list-inside">
-            <li>Navigate to the store using the button below</li>
-            <li>Show this coupon code at checkout</li>
-            <li>Staff will verify and apply your discount</li>
-            <li>Complete your purchase and save!</li>
+            <li>Navigate to the supplier using the button below</li>
+            <li>Show this coupon code before checkout</li>
+            <li>The supplier verifies the code</li>
+            <li>Complete your purchase before the coupon expires</li>
           </ol>
         </div>
 
-        {/* Navigation Button */}
         <Button
           size="lg"
           fullWidth
@@ -198,11 +238,9 @@ export function CouponScreen() {
           Start Navigation in Maps
         </Button>
 
-        {/* Terms */}
         <div className="text-center text-xs text-[var(--muted-foreground)] pt-4">
-          <p>• Single use only • Valid for 24 hours</p>
-          <p>• Cannot be combined with other offers</p>
-          <p>• Subject to stock availability</p>
+          <p>Single use only. Valid for 24 hours.</p>
+          <p>Subject to supplier stock availability.</p>
         </div>
       </div>
     </div>

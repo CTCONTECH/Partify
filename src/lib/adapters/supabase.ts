@@ -320,13 +320,14 @@ export class SupabaseCouponRepository implements CouponRepository {
     supplierId: string,
     partId: string,
     price: number,
+    inventoryId?: string,
     userLocation?: Location
   ): Promise<Coupon> {
     const { data, error } = await (supabase() as any).rpc('issue_coupon', {
       p_user_id: userId,
       p_supplier_id: supplierId,
       p_part_id: partId,
-      p_inventory_id: null,
+      p_inventory_id: inventoryId || null,
       p_price: price,
       p_user_lat: userLocation?.lat || null,
       p_user_lon: userLocation?.lon || null,

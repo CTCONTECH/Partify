@@ -159,6 +159,7 @@ export class MockCouponRepository implements CouponRepository {
     supplierId: string,
     partId: string,
     price: number,
+    inventoryId?: string,
     userLocation?: Location
   ): Promise<Coupon> {
     const coupon = createCoupon(userId, supplierId, partId, price, 5);
