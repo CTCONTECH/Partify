@@ -12,7 +12,7 @@ import {
   SettlementRepository,
   ImportRepository,
 } from '../repositories/types';
-import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType } from '@/types';
+import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType, FuelProfile } from '@/types';
 
 let supabaseClient: any | null = null;
 
@@ -217,13 +217,16 @@ export class SupabaseSupplierRepository implements SupplierRepository {
 }
 
 export class SupabaseInventoryRepository implements InventoryRepository {
-  async getPartAvailability(partId: string, userLocation?: Location): Promise<SupplierResult[]> {
+  async getPartAvailability(partId: string, userLocation?: Location, fuelProfile?: FuelProfile): Promise<SupplierResult[]> {
     if (!isUuid(partId)) return [];
 
     const { data, error } = await (supabase() as any).rpc('get_part_availability', {
       part_id_filter: partId,
       user_lat: userLocation?.lat || null,
       user_lon: userLocation?.lon || null,
+      fuel_price_per_litre: fuelProfile?.pricePerLitre || 22.53,
+      consumption_l_per_100km: fuelProfile?.consumptionLPer100Km || 8.0,
+      round_trip: true,
     });
 
     if (error) throw toError(error);

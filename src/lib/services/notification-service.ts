@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { scorePartCompatibility, VehicleOption } from '@/lib/vehicle-catalog';
+import { VehicleOption } from '@/lib/vehicle-catalog';
 
 export type SupplierNotificationType = 'low-stock' | 'out-of-stock' | 'import-review' | 'import-error';
 export type ClientNotificationType = 'vehicle-setup' | 'coupon-expiring' | 'compatible-part';
@@ -175,11 +175,6 @@ function joinedSupplier(suppliers: any) {
   return suppliers;
 }
 
-function toCompatibilityString(value: any) {
-  if (Array.isArray(value)) return value.join(', ');
-  return value ? String(value) : '';
-}
-
 function primaryVehicleFromRow(row: any): (VehicleOption & { id?: string }) | null {
   if (!row) return null;
 
@@ -338,49 +333,30 @@ export async function getClientNotifications(userId: string): Promise<ClientNoti
     const since = new Date();
     since.setDate(since.getDate() - 14);
 
-    const { data: inventory, error: inventoryError } = await supabase
-      .from('supplier_inventory')
-      .select(`
-        id,
-        price,
-        stock,
-        updated_at,
-        created_at,
-        parts (
-          id,
-          part_name,
-          part_number,
-          compatibility
-        ),
-        suppliers (
-          business_name,
-          suburb
-        )
-      `)
-      .gt('stock', 0)
-      .gte('updated_at', since.toISOString())
-      .order('updated_at', { ascending: false })
-      .limit(25);
+    const { data: compatibleParts, error: compatibleError } = await supabase.rpc('get_compatible_parts', {
+      vehicle_make: vehicle.make,
+      vehicle_model: vehicle.model,
+      vehicle_year: vehicle.year,
+      vehicle_engine: vehicle.engine,
+      search_query: '',
+      result_limit: 25,
+    });
 
-    if (inventoryError) {
-      console.warn('Client compatible part notifications unavailable:', inventoryError.message);
+    if (compatibleError) {
+      console.warn('Client compatible part notifications unavailable:', compatibleError.message);
     }
 
-    (inventoryError ? [] : (inventory || [])).forEach((item: any) => {
-      const part = joinedPart(item.parts);
-      const supplier = joinedSupplier(item.suppliers);
-      const compatibility = toCompatibilityString(part?.compatibility);
-      const score = scorePartCompatibility(compatibility, vehicle);
-      if (score <= 0) return;
+    (compatibleError ? [] : (compatibleParts || [])).forEach((part: any) => {
+      const timestamp = part.latest_inventory_at;
+      if (!timestamp || new Date(timestamp).getTime() < since.getTime()) return;
 
-      const timestamp = item.updated_at || item.created_at;
-      const id = `compatible-part-${item.id}-${new Date(timestamp).toISOString().slice(0, 10)}`;
+      const id = `compatible-part-${part.id}-${new Date(timestamp).toISOString().slice(0, 10)}`;
 
       notifications.push({
         id,
         type: 'compatible-part',
         title: 'New compatible part available',
-        message: `${part?.part_name || 'A part'} is available at ${supplier?.business_name || 'a supplier'}.`,
+        message: `${part.part_name || 'A part'} is available from live supplier stock.`,
         time: formatNotificationTime(timestamp),
         timestamp,
         read: readIds.has(id),

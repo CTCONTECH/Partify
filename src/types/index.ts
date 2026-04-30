@@ -3,6 +3,16 @@ export interface Location {
   lon: number;
 }
 
+export interface FuelProfile {
+  fuelType: string;
+  fuelGrade: string;
+  consumptionLPer100Km: number;
+  pricePerLitre: number;
+  region: string;
+  priceEffectiveFrom: string;
+  source: string;
+}
+
 export interface Supplier {
   id: string;
   name: string;

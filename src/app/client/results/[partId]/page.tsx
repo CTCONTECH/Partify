@@ -10,6 +10,8 @@ import { MapPin, SlidersHorizontal } from 'lucide-react';
 import { partsService } from '@/lib/services/parts-service';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { isLiveMode } from '@/lib/config';
+import { vehicleService } from '@/lib/services/vehicle-service';
+import { VehicleOption } from '@/lib/vehicle-catalog';
 import { Location, Part, SupplierResult } from '@/types';
 
 const CAPE_TOWN_CBD: Location = { lat: -33.9249, lon: 18.4241 };
@@ -27,6 +29,7 @@ export default function SupplierResults() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [usingFallbackLocation, setUsingFallbackLocation] = useState(false);
+  const [vehicle, setVehicle] = useState<VehicleOption | null>(null);
   const { location, error: locationError, loading: locationLoading, requestLocation } = useGeolocation(false);
 
   useEffect(() => {
@@ -40,9 +43,15 @@ export default function SupplierResults() {
       setUsingFallbackLocation(!location);
 
       try {
+        let primaryVehicle: VehicleOption | null = vehicle;
+        if (!primaryVehicle) {
+          primaryVehicle = await vehicleService.getPrimaryVehicle();
+          setVehicle(primaryVehicle);
+        }
+
         const [partData, availability] = await Promise.all([
           partsService.getPartById(partId),
-          partsService.getPartAvailability(partId, locationForSearch),
+          partsService.getPartAvailability(partId, locationForSearch, primaryVehicle),
         ]);
 
         setPart(partData);
@@ -61,7 +70,7 @@ export default function SupplierResults() {
     };
 
     load();
-  }, [partId, location]);
+  }, [partId, location, vehicle]);
 
   const sortedSuppliers = [...suppliers].sort((a, b) => {
     if (sortBy === 'total') return a.totalCost - b.totalCost;
@@ -95,7 +104,7 @@ export default function SupplierResults() {
               </p>
               <p className="text-xs text-[var(--muted-foreground)] mt-1">
                 {location
-                  ? 'Distances, fuel cost, and total cost are based on your browser location.'
+                  ? 'Distances, fuel estimate, and total cost use your browser location and saved vehicle profile.'
                   : locationError || 'Allow location access for more accurate supplier comparison.'}
               </p>
             </div>

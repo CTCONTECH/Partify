@@ -76,6 +76,38 @@ export default function PartSearch() {
     setFilteredParts(sortByCompatibility(scopedParts, selectedVehicle));
   }, []);
 
+  const loadPartsForScope = useCallback(async (
+    query: string,
+    selectedVehicle: VehicleOption | null,
+    selectedScope: SearchScope
+  ) => {
+    if (isLiveMode() && selectedScope === 'vehicle' && selectedVehicle) {
+      const parts = await partsService.searchCompatibleParts(selectedVehicle, query);
+      setAllParts(parts);
+      setFilteredParts(parts);
+      return parts;
+    }
+
+    if (isLiveMode()) {
+      const parts = await partsService.searchParts(query);
+      setAllParts(parts);
+      applyFilters(parts, selectedVehicle, selectedScope);
+      return parts;
+    }
+
+    const source = query.trim() === ''
+      ? mockParts
+      : mockParts.filter(part =>
+        part.partName.toLowerCase().includes(query.toLowerCase()) ||
+        part.partNumber.toLowerCase().includes(query.toLowerCase()) ||
+        part.category.toLowerCase().includes(query.toLowerCase())
+      );
+
+    setAllParts(source);
+    applyFilters(source, selectedVehicle, selectedScope);
+    return source;
+  }, [applyFilters]);
+
   useEffect(() => {
     const load = async () => {
       let primaryVehicle: VehicleOption | null = null;
@@ -93,9 +125,9 @@ export default function PartSearch() {
 
       setIsLoading(true);
       try {
-        const parts = await partsService.searchParts('');
-        setAllParts(parts);
-        applyFilters(parts, primaryVehicle, primaryVehicle ? 'vehicle' : 'all');
+        const nextScope = primaryVehicle ? 'vehicle' : 'all';
+        setScope(nextScope);
+        const parts = await loadPartsForScope('', primaryVehicle, nextScope);
         await loadPartStats(parts);
       } catch {
         setAllParts([]);
@@ -106,7 +138,7 @@ export default function PartSearch() {
     };
 
     load();
-  }, [applyFilters, loadPartStats]);
+  }, [loadPartStats, loadPartsForScope]);
 
   useEffect(() => {
     loadPartStats(filteredParts);
@@ -118,9 +150,7 @@ export default function PartSearch() {
     if (isLiveMode()) {
       setIsLoading(true);
       try {
-        const parts = await partsService.searchParts(query);
-        setAllParts(parts);
-        applyFilters(parts, vehicle, scope);
+        await loadPartsForScope(query, vehicle, scope);
       } catch {
         setAllParts([]);
         setFilteredParts([]);
@@ -130,24 +160,26 @@ export default function PartSearch() {
       return;
     }
 
-    if (query.trim() === '') {
-      setAllParts(mockParts);
-      applyFilters(mockParts, vehicle, scope);
+    void loadPartsForScope(query, vehicle, scope);
+  };
+
+  const handleScopeChange = async (value: string) => {
+    const nextScope = value as SearchScope;
+    setScope(nextScope);
+
+    if (isLiveMode()) {
+      setIsLoading(true);
+      try {
+        await loadPartsForScope(searchQuery, vehicle, nextScope);
+      } catch {
+        setAllParts([]);
+        setFilteredParts([]);
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
-    const filtered = mockParts.filter(part =>
-      part.partName.toLowerCase().includes(query.toLowerCase()) ||
-      part.partNumber.toLowerCase().includes(query.toLowerCase()) ||
-      part.category.toLowerCase().includes(query.toLowerCase())
-    );
-    setAllParts(filtered);
-    applyFilters(filtered, vehicle, scope);
-  };
-
-  const handleScopeChange = (value: string) => {
-    const nextScope = value as SearchScope;
-    setScope(nextScope);
     applyFilters(allParts, vehicle, nextScope);
   };
 

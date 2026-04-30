@@ -14,7 +14,7 @@ import {
 import { mockParts, mockSuppliers, mockInventory } from '@/data/mockData';
 import { createCoupon, updateCouponState as updateCouponStateUtil } from '../coupon';
 import { calculateDistance, calculateFuelCost } from '../geolocation';
-import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType } from '@/types';
+import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType, FuelProfile } from '@/types';
 
 // In-memory storage for mock mode
 const mockCoupons = new Map<string, Coupon>();
@@ -81,7 +81,7 @@ export class MockSupplierRepository implements SupplierRepository {
 }
 
 export class MockInventoryRepository implements InventoryRepository {
-  async getPartAvailability(partId: string, userLocation?: Location): Promise<SupplierResult[]> {
+  async getPartAvailability(partId: string, userLocation?: Location, fuelProfile?: FuelProfile): Promise<SupplierResult[]> {
     const part = mockParts.find(p => p.id === partId);
     if (!part) return [];
 
@@ -95,7 +95,9 @@ export class MockInventoryRepository implements InventoryRepository {
         ? calculateDistance(userLocation, supplier.coordinates)
         : 5.0;
 
-      const fuelCost = calculateFuelCost(distance);
+      const fuelCost = fuelProfile
+        ? Math.round(distance * 2 * (fuelProfile.consumptionLPer100Km / 100) * fuelProfile.pricePerLitre * 100) / 100
+        : calculateFuelCost(distance);
       const totalCost = inv.price + fuelCost;
 
       return {

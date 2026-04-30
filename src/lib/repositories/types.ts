@@ -1,7 +1,7 @@
 // Repository Interface Types
 // Defines contracts that both mock and Supabase adapters must implement
 
-import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType } from '@/types';
+import { Location, Supplier, Part, InventoryItem, SupplierResult, Coupon, CouponState, ImportJob, ImportRow, ImportRowInput, ImportSourceType, FuelProfile } from '@/types';
 
 export interface PartsRepository {
   searchParts(query: string): Promise<Part[]>;
@@ -16,7 +16,7 @@ export interface SupplierRepository {
 }
 
 export interface InventoryRepository {
-  getPartAvailability(partId: string, userLocation?: Location): Promise<SupplierResult[]>;
+  getPartAvailability(partId: string, userLocation?: Location, fuelProfile?: FuelProfile): Promise<SupplierResult[]>;
   getSupplierInventory(supplierId: string): Promise<InventoryItem[]>;
   updateStock(inventoryId: string, newStock: number): Promise<void>;
   updatePrice(inventoryId: string, newPrice: number): Promise<void>;
