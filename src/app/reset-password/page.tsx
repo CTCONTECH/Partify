@@ -6,7 +6,10 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { PartifyLogo } from '@/components/PartifyLogo';
 import { createClient } from '@/lib/supabase/client';
+import { createPasswordResetClient } from '@/lib/supabase/password-reset-client';
 import { CheckCircle2, Lock } from 'lucide-react';
+
+type ResetSessionMode = 'implicit' | 'ssr';
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -17,40 +20,68 @@ function ResetPasswordForm() {
   const [submitting, setSubmitting] = useState(false);
   const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionMode, setSessionMode] = useState<ResetSessionMode | null>(null);
 
   useEffect(() => {
     const prepareSession = async () => {
       setError(null);
 
       try {
-        const supabase = createClient();
         const code = searchParams.get('code');
+        const recoveryClient = createPasswordResetClient();
 
-        if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw exchangeError;
-        } else if (typeof window !== 'undefined' && window.location.hash) {
+        if (typeof window !== 'undefined' && window.location.hash) {
           const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
           const accessToken = hashParams.get('access_token');
           const refreshToken = hashParams.get('refresh_token');
 
           if (accessToken && refreshToken) {
-            const { error: sessionError } = await supabase.auth.setSession({
+            const { error: sessionError } = await recoveryClient.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken,
             });
             if (sessionError) throw sessionError;
+
+            const { data } = await recoveryClient.auth.getSession();
+            if (!data.session) {
+              throw new Error('This reset link is invalid or has expired. Request a new reset link.');
+            }
+
+            setSessionMode('implicit');
+            setReady(true);
+            return;
           }
         }
 
-        const { data } = await supabase.auth.getSession();
+        if (code) {
+          const supabase = createClient();
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) throw exchangeError;
+
+          const { data } = await supabase.auth.getSession();
+          if (!data.session) {
+            throw new Error('This reset link is invalid or has expired. Request a new reset link.');
+          }
+
+          setSessionMode('ssr');
+          setReady(true);
+          return;
+        }
+
+        const { data } = await recoveryClient.auth.getSession();
         if (!data.session) {
           throw new Error('This reset link is invalid or has expired. Request a new reset link.');
         }
 
+        setSessionMode('implicit');
         setReady(true);
       } catch (err: any) {
-        setError(err?.message || 'Could not open reset link.');
+        const message = String(err?.message || '');
+        if (message.toLowerCase().includes('pkce')) {
+          setError('This reset link could not be verified. Request a new reset email and open the latest link.');
+        } else {
+          setError(message || 'Could not open reset link.');
+        }
       }
     };
 
@@ -74,7 +105,7 @@ function ResetPasswordForm() {
     setSubmitting(true);
 
     try {
-      const supabase = createClient();
+      const supabase = sessionMode === 'ssr' ? createClient() : createPasswordResetClient();
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
       setComplete(true);

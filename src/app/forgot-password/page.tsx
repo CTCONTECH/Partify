@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { createClient } from '@/lib/supabase/client';
+import { createPasswordResetClient } from '@/lib/supabase/password-reset-client';
 import { Mail, ArrowLeft } from 'lucide-react';
 
 function friendlyResetError(message?: string) {
@@ -41,7 +42,8 @@ export default function ForgotPassword() {
         throw new Error('No Partify account is linked to this email address.');
       }
 
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      const resetClient = createPasswordResetClient();
+      const { error: resetError } = await resetClient.auth.resetPasswordForEmail(trimmedEmail, {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (resetError) throw resetError;
