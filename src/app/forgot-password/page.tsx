@@ -6,6 +6,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { createClient } from '@/lib/supabase/client';
 import { createPasswordResetClient } from '@/lib/supabase/password-reset-client';
+import { getAuthRedirectUrl } from '@/lib/auth/client';
 import { Mail, ArrowLeft } from 'lucide-react';
 
 function friendlyResetError(message?: string) {
@@ -44,7 +45,7 @@ export default function ForgotPassword() {
 
       const resetClient = createPasswordResetClient();
       const { error: resetError } = await resetClient.auth.resetPasswordForEmail(trimmedEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getAuthRedirectUrl('/reset-password'),
       });
       if (resetError) throw resetError;
       setSent(true);

@@ -23,6 +23,15 @@ function hasSupabaseEnv(): boolean {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get('host')?.toLowerCase();
+  const forwardedProto = request.headers.get('x-forwarded-proto');
+  const isPartifyDomain = host === 'partify.africa' || host === 'www.partify.africa';
+
+  if (isPartifyDomain && (forwardedProto === 'http' || request.nextUrl.protocol === 'http:')) {
+    const httpsUrl = request.nextUrl.clone();
+    httpsUrl.protocol = 'https:';
+    return NextResponse.redirect(httpsUrl, 301);
+  }
 
   if (isStaticAsset(pathname) || pathname.startsWith('/api')) {
     return NextResponse.next();
