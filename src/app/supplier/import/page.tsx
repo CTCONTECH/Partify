@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Papa from 'papaparse';
+import { AlertCircle, CheckCircle2, FileText, Upload, X } from 'lucide-react';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
@@ -9,51 +11,148 @@ import { Badge } from '@/components/Badge';
 import { getImportRepository } from '@/lib/adapters/factory';
 import { useSupplierId } from '@/hooks/useSupplierId';
 import { ImportRowInput } from '@/types';
-import { Upload, FileText, AlertCircle, CheckCircle2, X } from 'lucide-react';
-
-// ── CSV parsing ──────────────────────────────────────────────────────────────
 
 type ParsedRow = ImportRowInput & { _raw: string; _error?: string };
+type CsvRecord = Record<string, string | undefined>;
+
+const HEADER_ALIASES = {
+  partNumber: [
+    'part_number',
+    'part number',
+    'partnumber',
+    'part no',
+    'part_no',
+    'part code',
+    'part_code',
+    'sku',
+    'code',
+    'item code',
+    'item_code',
+  ],
+  description: [
+    'description',
+    'part description',
+    'part_description',
+    'name',
+    'part name',
+    'part_name',
+    'item name',
+    'item_name',
+  ],
+  price: [
+    'price',
+    'unit price',
+    'unit_price',
+    'retail price',
+    'retail_price',
+    'selling price',
+    'selling_price',
+  ],
+  stock: ['stock', 'qty', 'quantity', 'stock qty', 'stock_qty', 'on hand', 'on_hand'],
+};
+
+function normalizeHeader(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^\uFEFF/, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function findColumn(headers: string[], aliases: string[]): string | undefined {
+  const normalizedAliases = aliases.map(normalizeHeader);
+  return headers.find((header) => normalizedAliases.includes(normalizeHeader(header)));
+}
+
+function parseNumber(value?: string): number | undefined {
+  const cleaned = (value || '')
+    .trim()
+    .replace(/^R\s*/i, '')
+    .replace(/\s/g, '')
+    .replace(/,/g, '');
+
+  if (!cleaned) return undefined;
+
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+function rowToRawString(record: CsvRecord): string {
+  return Object.values(record)
+    .filter((value) => value !== undefined && value !== null)
+    .join(', ');
+}
 
 function parseCSV(text: string): ParsedRow[] {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length === 0) return [];
+  const trimmed = text.trim();
+  if (!trimmed) return [];
 
-  // Detect header row — if first cell can't be a part number it's a header
-  const firstCell = lines[0].split(',')[0].trim().toLowerCase();
-  const hasHeader = ['part', 'part_number', 'part number', 'number', 'sku', 'code'].some(h =>
-    firstCell.includes(h)
-  );
-  const dataLines = hasHeader ? lines.slice(1) : lines;
+  const preview = Papa.parse<string[]>(trimmed, {
+    preview: 1,
+    skipEmptyLines: 'greedy',
+  });
 
-  return dataLines.map((line, idx) => {
-    const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-    const [rawPartNumber = '', rawDescription = '', priceRaw = '', stockRaw = ''] = cols;
+  const firstRow = preview.data[0] || [];
+  const normalizedFirstRow = firstRow.map(normalizeHeader);
+  const knownHeaderCount = Object.values(HEADER_ALIASES)
+    .flat()
+    .filter((alias) => normalizedFirstRow.includes(normalizeHeader(alias))).length;
+  const hasHeader = knownHeaderCount > 0;
 
-    if (!rawPartNumber) {
-      return {
-        rowNumber: idx + 1,
-        rawPartNumber: '',
-        _raw: line,
-        _error: 'Missing part number',
-      };
+  const parsed = Papa.parse<CsvRecord>(trimmed, {
+    header: hasHeader,
+    skipEmptyLines: 'greedy',
+    transformHeader: (header) => header.trim().replace(/^\uFEFF/, ''),
+  });
+
+  if (parsed.errors.length > 0) {
+    const firstError = parsed.errors[0];
+    throw new Error(firstError.message || 'Could not parse CSV.');
+  }
+
+  const rows: CsvRecord[] = hasHeader
+    ? parsed.data
+    : (parsed.data as unknown as string[][]).map((row) => ({
+        part_number: row[0],
+        description: row[1],
+        price: row[2],
+        stock: row[3],
+      }));
+
+  const headers = hasHeader ? Object.keys(rows[0] || {}) : ['part_number', 'description', 'price', 'stock'];
+  const partNumberColumn = findColumn(headers, HEADER_ALIASES.partNumber) || 'part_number';
+  const descriptionColumn = findColumn(headers, HEADER_ALIASES.description) || 'description';
+  const priceColumn = findColumn(headers, HEADER_ALIASES.price) || 'price';
+  const stockColumn = findColumn(headers, HEADER_ALIASES.stock) || 'stock';
+
+  return rows.map((row, idx) => {
+    const rowNumber = idx + (hasHeader ? 2 : 1);
+    const rawPartNumber = (row[partNumberColumn] || '').trim();
+    const rawDescription = (row[descriptionColumn] || '').trim();
+    const price = parseNumber(row[priceColumn]);
+    const stock = parseNumber(row[stockColumn]);
+    const errors: string[] = [];
+
+    if (!rawPartNumber) errors.push('Missing part number');
+    if (Number.isNaN(price)) errors.push('Invalid price');
+    if (Number.isNaN(stock)) errors.push('Invalid stock');
+    if (price !== undefined && !Number.isNaN(price) && price < 0) errors.push('Price cannot be negative');
+    if (stock !== undefined && !Number.isNaN(stock) && (!Number.isInteger(stock) || stock < 0)) {
+      errors.push('Stock must be a whole number');
     }
 
-    const price = parseFloat(priceRaw);
-    const stock = parseInt(stockRaw, 10);
-
     return {
-      rowNumber: idx + 1,
+      rowNumber,
       rawPartNumber,
       rawDescription: rawDescription || undefined,
-      price: isNaN(price) ? undefined : price,
-      stock: isNaN(stock) ? undefined : stock,
-      _raw: line,
+      price: price === undefined || Number.isNaN(price) ? undefined : price,
+      stock: stock === undefined || Number.isNaN(stock) ? undefined : stock,
+      _raw: rowToRawString(row),
+      _error: errors.length > 0 ? errors.join('; ') : undefined,
     };
   });
 }
-
-// ── Component ────────────────────────────────────────────────────────────────
 
 export default function SupplierImportPage() {
   const router = useRouter();
@@ -66,11 +165,11 @@ export default function SupplierImportPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const validRows = parsedRows.filter(r => !r._error && r.rawPartNumber);
-  const errorRows = parsedRows.filter(r => r._error);
+  const validRows = parsedRows.filter((row) => !row._error && row.rawPartNumber);
+  const errorRows = parsedRows.filter((row) => row._error);
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
     if (!file) return;
 
     setParseError(null);
@@ -78,18 +177,21 @@ export default function SupplierImportPage() {
     setFileName(file.name);
 
     const reader = new FileReader();
-    reader.onload = ev => {
-      const text = ev.target?.result as string;
+    reader.onload = (readerEvent) => {
+      const text = readerEvent.target?.result as string;
+
       try {
         const rows = parseCSV(text);
+
         if (rows.length === 0) {
           setParseError('No data rows found in the file.');
           setParsedRows([]);
           return;
         }
+
         setParsedRows(rows);
-      } catch {
-        setParseError('Could not parse CSV. Check the file format.');
+      } catch (err: any) {
+        setParseError(err?.message || 'Could not parse CSV. Check the file format.');
         setParsedRows([]);
       }
     };
@@ -106,6 +208,7 @@ export default function SupplierImportPage() {
 
   async function handleSubmit() {
     if (validRows.length === 0) return;
+
     setSubmitting(true);
     setSubmitError(null);
 
@@ -129,8 +232,6 @@ export default function SupplierImportPage() {
       <TopBar title="Import Inventory" showBack />
 
       <div className="p-6 max-w-2xl mx-auto space-y-6">
-
-        {/* Format guidance */}
         <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
           <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
@@ -146,7 +247,6 @@ export default function SupplierImportPage() {
           </div>
         </div>
 
-        {/* File drop zone */}
         <div
           className="border-2 border-dashed border-[var(--border)] rounded-2xl p-8 text-center cursor-pointer hover:border-[var(--primary)] transition-colors"
           onClick={() => fileInputRef.current?.click()}
@@ -156,7 +256,10 @@ export default function SupplierImportPage() {
               <FileText className="w-5 h-5 text-[var(--primary)]" />
               <span className="text-sm font-medium">{fileName}</span>
               <button
-                onClick={e => { e.stopPropagation(); clearFile(); }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  clearFile();
+                }}
                 className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               >
                 <X className="w-4 h-4" />
@@ -180,7 +283,6 @@ export default function SupplierImportPage() {
           />
         </div>
 
-        {/* Parse error */}
         {parseError && (
           <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -188,7 +290,6 @@ export default function SupplierImportPage() {
           </div>
         )}
 
-        {/* Preview */}
         {parsedRows.length > 0 && (
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
@@ -229,14 +330,13 @@ export default function SupplierImportPage() {
               ))}
               {parsedRows.length > 50 && (
                 <div className="px-4 py-2.5 text-center text-xs text-[var(--muted-foreground)]">
-                  … and {parsedRows.length - 50} more rows
+                  ... and {parsedRows.length - 50} more rows
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Submit error */}
         {submitError && (
           <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -244,7 +344,6 @@ export default function SupplierImportPage() {
           </div>
         )}
 
-        {/* Submit */}
         {validRows.length > 0 && (
           <Button
             variant="primary"
@@ -253,7 +352,7 @@ export default function SupplierImportPage() {
             disabled={submitting || loading || !supplierId}
           >
             {submitting
-              ? 'Processing…'
+              ? 'Processing...'
               : `Submit ${validRows.length} row${validRows.length !== 1 ? 's' : ''} for review`
             }
           </Button>

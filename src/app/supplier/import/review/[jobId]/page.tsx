@@ -36,6 +36,17 @@ function MatchBadge({ status }: { status: ImportRow['matchStatus'] }) {
   return <Badge variant="low-stock" size="sm">Pending</Badge>;
 }
 
+function matchReasonLabel(reason?: string): string | null {
+  if (!reason) return null;
+  if (reason === 'supplier_alias_exact') return 'Matched by your supplier alias';
+  if (reason === 'global_alias_exact') return 'Matched by catalogue alias';
+  if (reason === 'canonical_part_number_exact') return 'Matched by canonical part number';
+  if (reason === 'manual_review_assignment') return 'Assigned manually';
+  if (reason.startsWith('ambiguous_')) return 'Needs review: multiple possible matches';
+  if (reason === 'no_alias_or_canonical_match') return 'Needs review: no catalogue match';
+  return reason.replace(/_/g, ' ');
+}
+
 // ── Row resolve widget ───────────────────────────────────────────────────────
 
 function ResolveRow({
@@ -165,7 +176,7 @@ export default function ImportReviewPage() {
     setRows(prev =>
       prev.map(r =>
         r.id === rowId
-          ? { ...r, matchStatus: 'matched', matchedPartId: partId }
+          ? { ...r, matchStatus: 'matched', matchedPartId: partId, matchReason: 'manual_review_assignment', matchConfidence: 1, errorReason: undefined }
           : r
       )
     );
@@ -309,6 +320,7 @@ export default function ImportReviewPage() {
                 ? parts.find(p => p.id === row.matchedPartId)
                 : undefined;
               const manualDescription = parseManualDescription(row.rawDescription);
+              const matchReason = matchReasonLabel(row.matchReason);
 
               return (
                 <div key={row.id} className="px-4 py-3">
@@ -334,6 +346,9 @@ export default function ImportReviewPage() {
                       )}
                       {row.errorReason && (
                         <p className="text-xs text-red-500 mt-0.5">{row.errorReason}</p>
+                      )}
+                      {matchReason && !row.errorReason && (
+                        <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{matchReason}</p>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1 flex-shrink-0">

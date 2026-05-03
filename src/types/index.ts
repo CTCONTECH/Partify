@@ -125,6 +125,8 @@ export interface ImportRow {
   stock?: number;
   matchStatus: ImportRowMatchStatus;
   matchedPartId?: string;
+  matchReason?: string;
+  matchConfidence?: number;
   errorReason?: string;
   approvedAt?: string;
   createdAt: string;

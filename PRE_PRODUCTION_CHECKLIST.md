@@ -59,10 +59,11 @@ Use this as the focused checklist for getting Partify from working pilot state t
 
 - [x] Supplier CSV import works with live inventory.
 - [x] Re-import updates existing inventory rather than duplicating rows.
-- [ ] Replace naive CSV parsing with a robust parser that supports quoted commas and newlines.
+- [x] Replace naive CSV parsing with a robust parser that supports quoted commas and newlines.
+- [x] Improve alias matching with supplier aliases, global aliases, canonical part numbers, and conservative ambiguity handling.
+- [x] Route unknown/unmatched parts into review instead of creating bad catalogue data.
 - [ ] Add import idempotency at file/job level.
 - [ ] Improve row-level import validation and error messaging.
-- [ ] Route unknown/unmatched parts into review instead of creating bad catalogue data.
 - [ ] Add clearer supplier-facing import states: imported, needs review, approved, rejected, catalogue review.
 
 ## P1 - Catalogue And Fitment Accuracy
@@ -111,6 +112,6 @@ Use this as the focused checklist for getting Partify from working pilot state t
 
 1. Remove old Netlify/local auth redirect URLs after final production auth verification.
 2. Add admin coupon monitoring view.
-3. Start supplier import hardening with robust CSV parsing.
+3. Add structured OE number and brand/manufacturer support.
 4. Add GitHub Actions for lint/build.
 5. Update this checklist as each item is completed.

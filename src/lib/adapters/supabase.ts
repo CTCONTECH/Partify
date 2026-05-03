@@ -558,6 +558,8 @@ function toImportRow(row: any): ImportRow {
     stock: row.stock ?? undefined,
     matchStatus: row.match_status,
     matchedPartId: row.matched_part_id ?? undefined,
+    matchReason: row.match_reason ?? undefined,
+    matchConfidence: row.match_confidence === null ? undefined : Number(row.match_confidence),
     errorReason: row.error_reason ?? undefined,
     approvedAt: row.approved_at ?? undefined,
     createdAt: row.created_at,
@@ -662,6 +664,8 @@ export class SupabaseImportRepository implements ImportRepository {
       .update({
         matched_part_id: partId,
         match_status: 'matched',
+        match_reason: 'manual_review_assignment',
+        match_confidence: 1,
         error_reason: null,
       })
       .eq('id', rowId);

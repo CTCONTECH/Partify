@@ -324,6 +324,8 @@ export class MockImportRepository implements ImportRepository {
       if (matched) {
         row.matchStatus = 'matched';
         row.matchedPartId = matched.id;
+        row.matchReason = 'canonical_part_number_exact';
+        row.matchConfidence = 0.95;
       }
     });
 
@@ -367,6 +369,8 @@ export class MockImportRepository implements ImportRepository {
       if (row) {
         row.matchStatus = 'matched';
         row.matchedPartId = partId;
+        row.matchReason = 'manual_review_assignment';
+        row.matchConfidence = 1;
         row.errorReason = undefined;
         const job = mockImportJobs.get(row.jobId);
         if (job) {
