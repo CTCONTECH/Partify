@@ -70,7 +70,18 @@ export default function SupplierDashboard() {
   const [stats, setStats] = useState<DashboardStats>(isLiveMode() ? EMPTY_STATS : MOCK_STATS);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>(isLiveMode() ? [] : MOCK_ACTIVITY);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [redeemedNotice, setRedeemedNotice] = useState(false);
   const [loading, setLoading] = useState(isLiveMode());
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('redeemed') === '1') {
+      setRedeemedNotice(true);
+      window.history.replaceState(null, '', '/supplier/dashboard');
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLiveMode()) return;
@@ -172,6 +183,12 @@ export default function SupplierDashboard() {
       <TopBar showLogo showNotifications notificationCount={notificationCount} />
 
       <div className="p-6 max-w-2xl mx-auto">
+        {redeemedNotice && (
+          <div className="bg-green-50 border border-green-200 text-green-700 rounded-2xl p-4 mb-6">
+            <p className="text-sm">Coupon redeemed successfully.</p>
+          </div>
+        )}
+
         <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white min-h-36">
           {loading ? (
             <div className="space-y-3 animate-pulse">

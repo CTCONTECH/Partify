@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { TopBar } from '@/components/TopBar';
 import { Button } from '@/components/Button';
 import { getAuthContext } from '@/lib/auth/client';
@@ -13,7 +14,7 @@ import {
 } from '@/lib/services/live-coupon-screen-service';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { Coupon } from '@/types';
-import { AlertCircle, MapPin, Copy, Check, Navigation, Clock, Store, Tag } from 'lucide-react';
+import { AlertCircle, MapPin, Copy, Check, Navigation, Clock, Store, Tag, QrCode } from 'lucide-react';
 
 export function CouponScreen() {
   const params = useParams();
@@ -26,8 +27,10 @@ export function CouponScreen() {
   const [coupon, setCoupon] = useState<Coupon | null>(null);
   const [copied, setCopied] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
+  const [redeemUrl, setRedeemUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     const loadCoupon = async () => {
@@ -87,6 +90,25 @@ export function CouponScreen() {
 
     return () => clearInterval(interval);
   }, [coupon]);
+
+  useEffect(() => {
+    if (!coupon || typeof window === 'undefined') return;
+
+    setRedeemUrl(`${window.location.origin}/supplier/redeem?code=${encodeURIComponent(coupon.code)}`);
+  }, [coupon]);
+
+  useEffect(() => {
+    if (!redeemUrl || !qrCanvasRef.current) return;
+
+    QRCode.toCanvas(qrCanvasRef.current, redeemUrl, {
+      margin: 1,
+      width: 176,
+      color: {
+        dark: '#111827',
+        light: '#ffffff',
+      },
+    }).catch(() => setError('Could not generate coupon QR code.'));
+  }, [redeemUrl]);
 
   const handleCopyCoupon = async () => {
     if (!coupon) return;
@@ -216,6 +238,19 @@ export function CouponScreen() {
             <Clock className="w-4 h-4" />
             <span>{timeRemaining}</span>
           </div>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <QrCode className="w-5 h-5 text-[var(--foreground)]" />
+            <h4 className="text-base">Supplier Scan</h4>
+          </div>
+          <div className="inline-flex bg-white rounded-2xl p-3 border border-[var(--border)]">
+            <canvas ref={qrCanvasRef} width={176} height={176} aria-label="Coupon QR code" />
+          </div>
+          <p className="text-sm text-[var(--muted-foreground)] mt-3">
+            Ask the supplier to scan this QR in Partify to verify and redeem your coupon.
+          </p>
         </div>
 
         <div className="bg-[var(--accent)] border border-[var(--primary)]/20 rounded-2xl p-4">

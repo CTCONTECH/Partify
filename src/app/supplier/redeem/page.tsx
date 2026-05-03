@@ -1,8 +1,8 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, CheckCircle2, ReceiptText, Search, ShieldCheck, Tag } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle2, ReceiptText, Search, ShieldCheck, Tag, X } from 'lucide-react';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
@@ -18,8 +18,36 @@ interface CouponLookup {
   clientLabel: string;
 }
 
+interface BarcodeDetectorResult {
+  rawValue: string;
+}
+
+interface BarcodeDetectorConstructor {
+  new (options?: { formats?: string[] }): {
+    detect(source: HTMLVideoElement): Promise<BarcodeDetectorResult[]>;
+  };
+}
+
+declare global {
+  interface Window {
+    BarcodeDetector?: BarcodeDetectorConstructor;
+  }
+}
+
 function normalizeCode(value: string): string {
   return value.trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function codeFromScan(value: string): string {
+  try {
+    const url = new URL(value);
+    const scannedCode = url.searchParams.get('code');
+    if (scannedCode) return normalizeCode(scannedCode);
+  } catch {
+    // Plain coupon code scans land here.
+  }
+
+  return normalizeCode(value);
 }
 
 function formatMoney(value: number): string {
@@ -47,47 +75,19 @@ export default function SupplierRedeemPage() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    const loadSupplier = async () => {
-      try {
-        const supabase = createClient();
-        const { data: userData } = await supabase.auth.getUser();
-        const user = userData.user;
+  const stopScanner = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setScanning(false);
+  }, []);
 
-        if (!user) {
-          router.replace('/login?next=/supplier/redeem');
-          return;
-        }
-
-        const { data: supplier } = await supabase
-          .from('suppliers')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (!supplier) {
-          router.replace('/supplier/onboarding');
-          return;
-        }
-
-        setSupplierId(supplier.id);
-      } catch (err: any) {
-        setError(err?.message || 'Could not load supplier account.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSupplier();
-  }, [router]);
-
-  const handleLookup = async (event: FormEvent) => {
-    event.preventDefault();
-
-    const couponCode = normalizeCode(code);
+  const verifyCoupon = useCallback(async (couponCode: string) => {
     if (!couponCode) {
       setError('Enter a coupon code.');
       return;
@@ -131,7 +131,110 @@ export default function SupplierRedeemPage() {
     } finally {
       setSearching(false);
     }
+  }, [supplierId]);
+
+  const startScanner = useCallback(async () => {
+    setError(null);
+    setSuccess(null);
+
+    if (!window.BarcodeDetector) {
+      setError('QR scanning is not supported by this browser. Type the coupon code instead.');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+      });
+      streamRef.current = stream;
+      setScanning(true);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+      const scan = async () => {
+        if (!streamRef.current || !videoRef.current) return;
+
+        const results = await detector.detect(videoRef.current);
+        const rawValue = results[0]?.rawValue;
+
+        if (rawValue) {
+          const scannedCode = codeFromScan(rawValue);
+          setCode(scannedCode);
+          stopScanner();
+          await verifyCoupon(scannedCode);
+          return;
+        }
+
+        window.setTimeout(scan, 400);
+      };
+
+      window.setTimeout(scan, 500);
+    } catch {
+      stopScanner();
+      setError('Could not access the camera. Type the coupon code instead.');
+    }
+  }, [stopScanner, verifyCoupon]);
+
+  useEffect(() => {
+    const loadSupplier = async () => {
+      try {
+        const supabase = createClient();
+        const { data: userData } = await supabase.auth.getUser();
+        const user = userData.user;
+
+        if (!user) {
+          router.replace('/login?next=/supplier/redeem');
+          return;
+        }
+
+        const { data: supplier } = await supabase
+          .from('suppliers')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!supplier) {
+          router.replace('/supplier/onboarding');
+          return;
+        }
+
+        setSupplierId(supplier.id);
+      } catch (err: any) {
+        setError(err?.message || 'Could not load supplier account.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSupplier();
+  }, [router]);
+
+  useEffect(() => {
+    if (!supplierId || typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const queryCode = params.get('code');
+    if (!queryCode) return;
+
+    const couponCode = normalizeCode(queryCode);
+    setCode(couponCode);
+    void verifyCoupon(couponCode);
+    window.history.replaceState(null, '', '/supplier/redeem');
+  }, [supplierId, verifyCoupon]);
+
+  useEffect(() => {
+    return () => stopScanner();
+  }, [stopScanner]);
+
+  const handleLookup = async (event: FormEvent) => {
+    event.preventDefault();
+    await verifyCoupon(normalizeCode(code));
   };
+
 
   const handleRedeem = async () => {
     if (!lookup || !supplierId) return;
@@ -156,7 +259,7 @@ export default function SupplierRedeemPage() {
           redeemedAt: new Date().toISOString(),
         },
       });
-      setTimeout(() => router.replace('/supplier/dashboard'), 1200);
+      setTimeout(() => router.replace('/supplier/dashboard?redeemed=1'), 1200);
     } catch (err: any) {
       setError(err?.message || 'Could not redeem coupon.');
     } finally {
@@ -197,7 +300,43 @@ export default function SupplierRedeemPage() {
             <Search className="w-5 h-5 mr-2" />
             {searching ? 'Checking...' : 'Check Coupon'}
           </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            fullWidth
+            disabled={loading || searching || redeeming || scanning}
+            onClick={startScanner}
+          >
+            <Camera className="w-5 h-5 mr-2" />
+            Scan QR Code
+          </Button>
         </form>
+
+        {scanning && (
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-base">Scan Client Coupon</h3>
+              <button
+                type="button"
+                onClick={stopScanner}
+                className="p-2 rounded-lg active:bg-[var(--muted)]"
+                aria-label="Stop scanning"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <video
+              ref={videoRef}
+              className="w-full aspect-video rounded-xl bg-black object-cover"
+              playsInline
+              muted
+            />
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Point the camera at the QR code on the client&apos;s coupon screen.
+            </p>
+          </div>
+        )}
 
         {error && (
           <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
