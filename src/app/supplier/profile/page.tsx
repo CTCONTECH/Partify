@@ -7,7 +7,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
 import { createClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/client';
-import { AlertCircle, Store, MapPin, Bell, HelpCircle, LogOut, ChevronRight, ReceiptText } from 'lucide-react';
+import { AlertCircle, Store, MapPin, Bell, HelpCircle, LogOut, ChevronRight } from 'lucide-react';
 
 interface SupplierProfileInfo {
   businessName: string;
@@ -150,22 +150,6 @@ export default function SupplierProfile() {
               <h4 className="text-base mb-1">Business Details</h4>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Edit your store information
-              </p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-[var(--muted-foreground)]" />
-          </button>
-
-          <button
-            onClick={() => router.push('/supplier/redeem')}
-            className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
-          >
-            <div className="bg-[var(--muted)] p-2 rounded-lg">
-              <ReceiptText className="w-5 h-5 text-[var(--foreground)]" />
-            </div>
-            <div className="flex-1 text-left">
-              <h4 className="text-base mb-1">Redeem Coupon</h4>
-              <p className="text-sm text-[var(--muted-foreground)]">
-                Verify a client coupon code
               </p>
             </div>
             <ChevronRight className="w-5 h-5 text-[var(--muted-foreground)]" />

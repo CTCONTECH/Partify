@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Search, User, Package, Ticket } from 'lucide-react';
+import { Home, Search, User, Package, Ticket, ReceiptText } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -29,6 +29,7 @@ export function BottomNav({ role }: BottomNavProps) {
   const supplierNav: NavItem[] = [
     { icon: Home, label: 'Dashboard', path: '/supplier/dashboard' },
     { icon: Package, label: 'Inventory', path: '/supplier/inventory' },
+    { icon: ReceiptText, label: 'Redeem', path: '/supplier/redeem' },
     { icon: User, label: 'Profile', path: '/supplier/profile' }
   ];
 
