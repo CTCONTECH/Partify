@@ -7,8 +7,9 @@ import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
 import { Badge } from '@/components/Badge';
 import { getImportRepository, getPartsRepository } from '@/lib/adapters/factory';
+import { getImportDisplayState, importDisplayDescription, importDisplayLabel, ImportDisplayState } from '@/lib/import-status';
 import { ImportJob, ImportRow, Part } from '@/types';
-import { CheckCircle2, AlertCircle, HelpCircle, ChevronDown } from 'lucide-react';
+import { CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
 
 function parseManualDescription(rawDescription?: string) {
   if (!rawDescription?.includes('PART:')) return null;
@@ -34,6 +35,13 @@ function MatchBadge({ status }: { status: ImportRow['matchStatus'] }) {
   if (status === 'error') return <Badge variant="out-of-stock" size="sm">Error</Badge>;
   if (status === 'skipped') return <Badge variant="out-of-stock" size="sm">Skipped</Badge>;
   return <Badge variant="low-stock" size="sm">Pending</Badge>;
+}
+
+function importStatusVariant(state: ImportDisplayState) {
+  if (state === 'imported') return 'success';
+  if (state === 'rejected' || state === 'needs_review') return 'error';
+  if (state === 'catalogue_review' || state === 'ready_to_approve') return 'warning';
+  return 'info';
 }
 
 function matchReasonLabel(reason?: string): string | null {
@@ -260,8 +268,10 @@ export default function ImportReviewPage() {
 
   const matched = rows.filter(r => r.matchStatus === 'matched').length;
   const unmatched = rows.filter(r => r.matchStatus === 'unmatched').length;
+  const rowErrors = rows.filter(r => r.matchStatus === 'error').length;
   const isApproved = job?.status === 'approved' || job?.status === 'rejected';
   const hasCatalogCandidate = rows.some(r => r.matchStatus === 'unmatched' && !!parseManualDescription(r.rawDescription));
+  const displayState = job ? getImportDisplayState(job) : 'needs_review';
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
@@ -275,17 +285,16 @@ export default function ImportReviewPage() {
             <p className="text-sm font-medium">
               {job?.fileName ? job.fileName : `${job?.sourceType ?? 'Import'} job`}
             </p>
-            <Badge
-              variant={
-                job?.status === 'approved' ? 'available' :
-                job?.status === 'rejected' ? 'out-of-stock' : 'low-stock'
-              }
-              size="sm"
-            >
-              {job?.status}
+            <Badge variant={importStatusVariant(displayState)} size="sm">
+              {importDisplayLabel(displayState)}
             </Badge>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-center">
+          {job && (
+            <p className="text-xs text-[var(--muted-foreground)]">
+              {importDisplayDescription(job)}
+            </p>
+          )}
+          <div className="grid grid-cols-4 gap-3 text-center">
             <div className="bg-[var(--muted)] rounded-xl p-2">
               <p className="text-lg font-semibold">{rows.length}</p>
               <p className="text-xs text-[var(--muted-foreground)]">Total</p>
@@ -298,7 +307,19 @@ export default function ImportReviewPage() {
               <p className="text-lg font-semibold text-amber-600">{unmatched}</p>
               <p className="text-xs text-[var(--muted-foreground)]">Unmatched</p>
             </div>
+            <div className="bg-[var(--muted)] rounded-xl p-2">
+              <p className="text-lg font-semibold text-red-600">{rowErrors}</p>
+              <p className="text-xs text-[var(--muted-foreground)]">Errors</p>
+            </div>
           </div>
+          {rowErrors > 0 && !isApproved && (
+            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700">
+                Fix or remove error rows before approving this import.
+              </p>
+            </div>
+          )}
           {unmatched > 0 && !isApproved && (
             <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
               <HelpCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />

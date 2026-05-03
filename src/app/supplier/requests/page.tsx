@@ -7,24 +7,20 @@ import { BottomNav } from '@/components/BottomNav';
 import { Badge } from '@/components/Badge';
 import { getImportRepository } from '@/lib/adapters/factory';
 import { useSupplierId } from '@/hooks/useSupplierId';
+import {
+  getImportDisplayState,
+  importDisplayDescription,
+  importDisplayLabel,
+  ImportDisplayState,
+} from '@/lib/import-status';
 import { ImportJob } from '@/types';
 import { ChevronRight, FileWarning, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
-
-function statusVariant(status: ImportJob['status']) {
-  if (status === 'approved') return 'success';
-  if (status === 'rejected' || status === 'error') return 'error';
-  if (status === 'review') return 'warning';
+function statusVariant(state: ImportDisplayState) {
+  if (state === 'imported') return 'success';
+  if (state === 'rejected' || state === 'needs_review') return 'error';
+  if (state === 'catalogue_review' || state === 'ready_to_approve') return 'warning';
   return 'info';
-}
-
-function statusLabel(status: ImportJob['status']) {
-  if (status === 'processing') return 'Processing';
-  if (status === 'review') return 'In Review';
-  if (status === 'approved') return 'Approved';
-  if (status === 'rejected') return 'Rejected';
-  if (status === 'error') return 'Error';
-  return 'Pending';
 }
 
 function toFriendlyDate(value: string) {
@@ -49,8 +45,7 @@ export default function SupplierRequestsPage() {
       try {
         const repo = getImportRepository();
         const all = await repo.getJobs(supplierId);
-        // Part requests are manual submissions that still need matching/catalog review.
-        const requests = all.filter(j => j.sourceType === 'manual');
+        const requests = all.filter((job) => job.sourceType === 'manual');
         setJobs(requests);
       } catch (e: any) {
         setError(e?.message || 'Failed to load pending requests.');
@@ -63,9 +58,12 @@ export default function SupplierRequestsPage() {
 
   const stats = useMemo(() => {
     return {
-      review: jobs.filter(j => j.status === 'review' || j.status === 'processing' || j.status === 'pending').length,
-      approved: jobs.filter(j => j.status === 'approved').length,
-      rejected: jobs.filter(j => j.status === 'rejected' || j.status === 'error').length,
+      open: jobs.filter((job) => {
+        const state = getImportDisplayState(job);
+        return state === 'processing' || state === 'ready_to_approve' || state === 'needs_review' || state === 'catalogue_review';
+      }).length,
+      imported: jobs.filter((job) => getImportDisplayState(job) === 'imported').length,
+      rejected: jobs.filter((job) => getImportDisplayState(job) === 'rejected').length,
     };
   }, [jobs]);
 
@@ -105,13 +103,13 @@ export default function SupplierRequestsPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 text-center">
             <Clock className="w-4 h-4 mx-auto text-amber-600 mb-1" />
-            <p className="text-lg font-semibold">{stats.review}</p>
-            <p className="text-xs text-[var(--muted-foreground)]">In Review</p>
+            <p className="text-lg font-semibold">{stats.open}</p>
+            <p className="text-xs text-[var(--muted-foreground)]">Open</p>
           </div>
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 text-center">
             <CheckCircle2 className="w-4 h-4 mx-auto text-green-600 mb-1" />
-            <p className="text-lg font-semibold">{stats.approved}</p>
-            <p className="text-xs text-[var(--muted-foreground)]">Approved</p>
+            <p className="text-lg font-semibold">{stats.imported}</p>
+            <p className="text-xs text-[var(--muted-foreground)]">Imported</p>
           </div>
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 text-center">
             <XCircle className="w-4 h-4 mx-auto text-red-600 mb-1" />
@@ -136,31 +134,37 @@ export default function SupplierRequestsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {jobs.map(job => (
-              <button
-                key={job.id}
-                onClick={() => router.push(`/supplier/import/review/${job.id}`)}
-                className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-left active:bg-[var(--muted)] transition-colors"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {job.fileName || `Manual request • ${toFriendlyDate(job.createdAt)}`}
-                    </p>
-                    <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
-                      {job.rowCount} row{job.rowCount !== 1 ? 's' : ''} • {job.matchedCount} matched • {job.unmatchedCount} waiting review
-                    </p>
-                    <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                      Updated {toFriendlyDate(job.updatedAt)}
-                    </p>
+            {jobs.map((job) => {
+              const displayState = getImportDisplayState(job);
+
+              return (
+                <button
+                  key={job.id}
+                  onClick={() => router.push(`/supplier/import/review/${job.id}`)}
+                  className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-left active:bg-[var(--muted)] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {job.fileName || `Manual request - ${toFriendlyDate(job.createdAt)}`}
+                      </p>
+                      <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                        {importDisplayDescription(job)}
+                      </p>
+                      <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                        Updated {toFriendlyDate(job.updatedAt)}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge variant={statusVariant(displayState)} size="sm">
+                        {importDisplayLabel(displayState)}
+                      </Badge>
+                      <ChevronRight className="w-4 h-4 text-[var(--muted-foreground)]" />
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <Badge variant={statusVariant(job.status)} size="sm">{statusLabel(job.status)}</Badge>
-                    <ChevronRight className="w-4 h-4 text-[var(--muted-foreground)]" />
-                  </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

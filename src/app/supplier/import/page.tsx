@@ -15,6 +15,12 @@ import { ImportRowInput } from '@/types';
 type ParsedRow = ImportRowInput & { _raw: string; _error?: string };
 type CsvRecord = Record<string, string | undefined>;
 
+interface SelectedImportFile {
+  name: string;
+  size: number;
+  hash: string;
+}
+
 const HEADER_ALIASES = {
   partNumber: [
     'part_number',
@@ -82,6 +88,14 @@ function rowToRawString(record: CsvRecord): string {
   return Object.values(record)
     .filter((value) => value !== undefined && value !== null)
     .join(', ');
+}
+
+async function hashFile(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 function parseCSV(text: string): ParsedRow[] {
@@ -160,6 +174,7 @@ export default function SupplierImportPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [fileName, setFileName] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<SelectedImportFile | null>(null);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -177,22 +192,30 @@ export default function SupplierImportPage() {
     setFileName(file.name);
 
     const reader = new FileReader();
-    reader.onload = (readerEvent) => {
+    reader.onload = async (readerEvent) => {
       const text = readerEvent.target?.result as string;
 
       try {
+        const hash = await hashFile(file);
         const rows = parseCSV(text);
 
         if (rows.length === 0) {
           setParseError('No data rows found in the file.');
           setParsedRows([]);
+          setSelectedFile(null);
           return;
         }
 
+        setSelectedFile({
+          name: file.name,
+          size: file.size,
+          hash,
+        });
         setParsedRows(rows);
       } catch (err: any) {
         setParseError(err?.message || 'Could not parse CSV. Check the file format.');
         setParsedRows([]);
+        setSelectedFile(null);
       }
     };
     reader.readAsText(file);
@@ -200,6 +223,7 @@ export default function SupplierImportPage() {
 
   function clearFile() {
     setFileName(null);
+    setSelectedFile(null);
     setParsedRows([]);
     setParseError(null);
     setSubmitError(null);
@@ -207,7 +231,7 @@ export default function SupplierImportPage() {
   }
 
   async function handleSubmit() {
-    if (validRows.length === 0) return;
+    if (parsedRows.length === 0) return;
 
     setSubmitting(true);
     setSubmitError(null);
@@ -217,8 +241,10 @@ export default function SupplierImportPage() {
       const job = await repo.createJob(
         supplierId!,
         'csv',
-        validRows,
-        fileName ?? undefined
+        parsedRows,
+        fileName ?? undefined,
+        selectedFile?.hash,
+        selectedFile?.size
       );
       router.push(`/supplier/import/review/${job.id}`);
     } catch (err: any) {
@@ -344,7 +370,7 @@ export default function SupplierImportPage() {
           </div>
         )}
 
-        {validRows.length > 0 && (
+        {parsedRows.length > 0 && (
           <Button
             variant="primary"
             className="w-full"
@@ -353,7 +379,7 @@ export default function SupplierImportPage() {
           >
             {submitting
               ? 'Processing...'
-              : `Submit ${validRows.length} row${validRows.length !== 1 ? 's' : ''} for review`
+              : `Submit ${parsedRows.length} row${parsedRows.length !== 1 ? 's' : ''} for review`
             }
           </Button>
         )}

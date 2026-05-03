@@ -105,6 +105,8 @@ export interface ImportJob {
   sourceType: ImportSourceType;
   status: ImportJobStatus;
   fileName?: string;
+  fileHash?: string;
+  fileSizeBytes?: number;
   rowCount: number;
   matchedCount: number;
   unmatchedCount: number;

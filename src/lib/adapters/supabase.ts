@@ -536,6 +536,8 @@ function toImportJob(row: any): ImportJob {
     sourceType: row.source_type as ImportSourceType,
     status: row.status,
     fileName: row.file_name ?? undefined,
+    fileHash: row.file_hash ?? undefined,
+    fileSizeBytes: row.file_size_bytes ?? undefined,
     rowCount: row.row_count,
     matchedCount: row.matched_count,
     unmatchedCount: row.unmatched_count,
@@ -571,8 +573,26 @@ export class SupabaseImportRepository implements ImportRepository {
     supplierId: string,
     sourceType: ImportSourceType,
     rows: ImportRowInput[],
-    fileName?: string
+    fileName?: string,
+    fileHash?: string,
+    fileSizeBytes?: number
   ): Promise<ImportJob> {
+    if (fileHash) {
+      const { data: existingJob, error: existingError } = await supabase()
+        .from('import_jobs')
+        .select('*')
+        .eq('supplier_id', supplierId)
+        .eq('source_type', sourceType)
+        .eq('file_hash', fileHash)
+        .in('status', ['pending', 'processing', 'review'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingError) throw existingError;
+      if (existingJob) return toImportJob(existingJob);
+    }
+
     // 1. Create the job record
     const { data: jobData, error: jobError } = await supabase()
       .from('import_jobs')
@@ -580,12 +600,32 @@ export class SupabaseImportRepository implements ImportRepository {
         supplier_id: supplierId,
         source_type: sourceType,
         file_name: fileName ?? null,
+        file_hash: fileHash ?? null,
+        file_size_bytes: fileSizeBytes ?? null,
         row_count: rows.length,
       })
       .select()
       .single();
 
-    if (jobError) throw jobError;
+    if (jobError) {
+      if (fileHash && jobError.code === '23505') {
+        const { data: existingJob, error: existingError } = await supabase()
+          .from('import_jobs')
+          .select('*')
+          .eq('supplier_id', supplierId)
+          .eq('source_type', sourceType)
+          .eq('file_hash', fileHash)
+          .in('status', ['pending', 'processing', 'review'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existingError) throw existingError;
+        if (existingJob) return toImportJob(existingJob);
+      }
+
+      throw jobError;
+    }
     const jobId = jobData.id;
 
     // 2. Insert all rows

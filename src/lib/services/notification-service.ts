@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
+import { getImportDisplayState, importDisplayLabel } from '@/lib/import-status';
 import { VehicleOption } from '@/lib/vehicle-catalog';
 
 export type SupplierNotificationType = 'low-stock' | 'out-of-stock' | 'import-review' | 'import-error';
@@ -207,7 +208,7 @@ export async function getSupplierNotifications(supplierId: string): Promise<Supp
       .lte('stock', 5),
     supabase
       .from('import_jobs')
-      .select('id, status, row_count, unmatched_count, error_count, updated_at, created_at')
+      .select('id, status, row_count, matched_count, unmatched_count, error_count, updated_at, created_at')
       .eq('supplier_id', supplierId)
       .in('status', ['review', 'error'])
       .order('updated_at', { ascending: false }),
@@ -232,15 +233,24 @@ export async function getSupplierNotifications(supplierId: string): Promise<Supp
   });
 
   const importNotifications: SupplierNotification[] = (imports || []).map((job) => {
-    const isError = job.status === 'error';
+    const displayState = getImportDisplayState({
+      status: job.status,
+      matchedCount: job.matched_count || 0,
+      unmatchedCount: job.unmatched_count || 0,
+      errorCount: job.error_count || 0,
+    });
+    const isError = displayState === 'needs_review';
+    const isCatalogueReview = displayState === 'catalogue_review';
 
     return {
       id: `import-${job.id}`,
       type: isError ? 'import-error' : 'import-review',
-      title: isError ? 'Import failed' : 'Import needs review',
+      title: importDisplayLabel(displayState),
       message: isError
         ? `${job.error_count || 0} row${job.error_count === 1 ? '' : 's'} need attention`
-        : `${job.unmatched_count || 0} unmatched row${job.unmatched_count === 1 ? '' : 's'} to review`,
+        : isCatalogueReview
+          ? `${job.unmatched_count || 0} row${job.unmatched_count === 1 ? '' : 's'} need catalogue review`
+          : `${job.row_count || 0} row${job.row_count === 1 ? '' : 's'} ready for review`,
       time: formatNotificationTime(job.updated_at || job.created_at),
       timestamp: job.updated_at || job.created_at,
       read: readIds.has(`import-${job.id}`),

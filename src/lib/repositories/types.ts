@@ -70,7 +70,9 @@ export interface ImportRepository {
     supplierId: string,
     sourceType: ImportSourceType,
     rows: ImportRowInput[],
-    fileName?: string
+    fileName?: string,
+    fileHash?: string,
+    fileSizeBytes?: number
   ): Promise<ImportJob>;
 
   /** List all import jobs for a supplier, newest first. */

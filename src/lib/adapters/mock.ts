@@ -298,8 +298,22 @@ export class MockImportRepository implements ImportRepository {
     supplierId: string,
     sourceType: ImportSourceType,
     rows: ImportRowInput[],
-    fileName?: string
+    fileName?: string,
+    fileHash?: string,
+    fileSizeBytes?: number
   ): Promise<ImportJob> {
+    if (fileHash) {
+      const existingJob = Array.from(mockImportJobs.values()).find(
+        job =>
+          job.supplierId === supplierId &&
+          job.sourceType === sourceType &&
+          job.fileHash === fileHash &&
+          ['pending', 'processing', 'review'].includes(job.status)
+      );
+
+      if (existingJob) return existingJob;
+    }
+
     const jobId = `mock-job-${Date.now()}`;
     const now = new Date().toISOString();
 
@@ -338,6 +352,8 @@ export class MockImportRepository implements ImportRepository {
       sourceType,
       status: 'review',
       fileName,
+      fileHash,
+      fileSizeBytes,
       rowCount: rows.length,
       matchedCount,
       unmatchedCount,
