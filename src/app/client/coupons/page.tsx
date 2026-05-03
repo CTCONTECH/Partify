@@ -176,17 +176,19 @@ export default function ClientCouponsPage() {
           <div className="space-y-3">
             {coupons.map(({ coupon, supplierName, supplierLocation, partName, partNumber }) => {
               const state = effectiveState(coupon);
-              const canOpen = ['issued', 'opened', 'navigation_started'].includes(state) && coupon.partId;
+              const canOpenActive = ['issued', 'opened', 'navigation_started'].includes(state) && coupon.partId;
+              const canViewDetails = ['redeemed', 'expired', 'cancelled'].includes(state);
 
               return (
                 <button
                   key={coupon.id}
                   type="button"
                   onClick={() => {
-                    if (canOpen) router.push(`/client/coupon/${coupon.supplierId}/${coupon.partId}`);
+                    if (canOpenActive) router.push(`/client/coupon/${coupon.supplierId}/${coupon.partId}`);
+                    if (canViewDetails) router.push(`/client/coupons/${coupon.id}`);
                   }}
                   className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 text-left active:bg-[var(--muted)] transition-colors disabled:active:bg-[var(--card)]"
-                  disabled={!canOpen}
+                  disabled={!canOpenActive && !canViewDetails}
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
@@ -217,9 +219,9 @@ export default function ClientCouponsPage() {
                   <div className="flex items-center justify-between text-sm text-[var(--muted-foreground)]">
                     <span className="flex items-center gap-2">
                       <Clock className="w-4 h-4" />
-                      {state === 'expired' ? 'Expired' : getCouponTimeRemaining(coupon)}
+                      {state === 'expired' ? 'Expired' : state === 'redeemed' ? 'Redeemed' : getCouponTimeRemaining(coupon)}
                     </span>
-                    {canOpen && <ChevronRight className="w-5 h-5" />}
+                    {(canOpenActive || canViewDetails) && <ChevronRight className="w-5 h-5" />}
                   </div>
                 </button>
               );

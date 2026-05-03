@@ -280,6 +280,22 @@ export default function SupplierRedeemPage() {
     && !isExpired(lookup.coupon)
     && !['redeemed', 'expired', 'cancelled'].includes(lookup.coupon.state);
 
+  if (success) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-9 h-9 text-green-700" />
+          </div>
+          <h1 className="text-2xl mb-2">Coupon Redeemed</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            The sale has been recorded for supplier reporting.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
       <TopBar title="Redeem Coupon" showBack />

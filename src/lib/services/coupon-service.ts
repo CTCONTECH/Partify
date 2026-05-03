@@ -106,6 +106,13 @@ export class CouponService {
   }
 
   /**
+   * Get coupon by id
+   */
+  async getCoupon(couponId: string): Promise<Coupon | null> {
+    return this.couponRepo.getCoupon(couponId);
+  }
+
+  /**
    * Get coupon by code (for supplier verification)
    */
   async getCouponByCode(code: string): Promise<Coupon | null> {
