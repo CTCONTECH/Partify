@@ -43,7 +43,6 @@ export default function SupplierRedeemPage() {
   const router = useRouter();
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [code, setCode] = useState('');
-  const [actualAmount, setActualAmount] = useState('');
   const [lookup, setLookup] = useState<CouponLookup | null>(null);
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
@@ -127,7 +126,6 @@ export default function SupplierRedeemPage() {
         partNumber: part?.part_number || 'Part number pending',
         clientLabel: `Client ${coupon.userId.slice(0, 8)}`,
       });
-      setActualAmount(String(coupon.finalPrice.toFixed(2)));
     } catch (err: any) {
       setError(err?.message || 'Could not verify coupon.');
     } finally {
@@ -138,12 +136,6 @@ export default function SupplierRedeemPage() {
   const handleRedeem = async () => {
     if (!lookup || !supplierId) return;
 
-    const amount = Number(actualAmount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setError('Enter the actual order amount.');
-      return;
-    }
-
     setRedeeming(true);
     setError(null);
     setSuccess(null);
@@ -152,7 +144,7 @@ export default function SupplierRedeemPage() {
       await couponService.redeemCoupon({
         couponId: lookup.coupon.id,
         redeemedBy: supplierId,
-        orderAmount: amount,
+        orderAmount: lookup.coupon.finalPrice,
       });
 
       setSuccess('Coupon redeemed successfully.');
@@ -164,6 +156,7 @@ export default function SupplierRedeemPage() {
           redeemedAt: new Date().toISOString(),
         },
       });
+      setTimeout(() => router.replace('/supplier/dashboard'), 1200);
     } catch (err: any) {
       setError(err?.message || 'Could not redeem coupon.');
     } finally {
@@ -254,15 +247,10 @@ export default function SupplierRedeemPage() {
               </div>
             </div>
 
-            <Input
-              label="Actual Order Amount"
-              type="number"
-              min="0"
-              step="0.01"
-              value={actualAmount}
-              onChange={(event) => setActualAmount(event.target.value)}
-              disabled={!canRedeem || redeeming}
-            />
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+              <p className="text-xs text-green-700 mb-1">Redemption Amount</p>
+              <p className="text-lg text-green-800">{formatMoney(lookup.coupon.finalPrice)}</p>
+            </div>
 
             <Button fullWidth onClick={handleRedeem} disabled={!canRedeem || redeeming}>
               <Tag className="w-5 h-5 mr-2" />
