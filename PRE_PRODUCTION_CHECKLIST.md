@@ -46,7 +46,10 @@ Use this as the focused checklist for getting Partify from working pilot state t
 - [x] Prevent duplicate active coupons for the same client, supplier, and part.
 - [x] Make client coupon issue/view/navigation event logging idempotent.
 - [x] Decide supplier redemption model for MVP.
-- [ ] Add supplier coupon redemption flow.
+- [x] Add supplier coupon redemption flow.
+- [x] Add supplier QR scan redemption flow.
+- [x] Add client redeemed coupon success handoff.
+- [x] Add redeemed coupon detail view in client coupon history.
 - [ ] Add supplier/admin coupon monitoring view.
 - [x] Tighten coupon event permissions so users cannot spoof unrelated coupon events.
 - [ ] Add scheduled stale coupon expiry/rotation job.
@@ -106,7 +109,7 @@ Use this as the focused checklist for getting Partify from working pilot state t
 ## Today's Suggested Order
 
 1. Remove old Netlify/local auth redirect URLs after final production auth verification.
-2. Decide supplier redemption model for MVP.
-3. Add supplier coupon redemption flow.
+2. Add supplier/admin coupon monitoring view.
+3. Add scheduled stale coupon expiry/rotation job.
 4. Start supplier import hardening with robust CSV parsing.
 5. Update this checklist as each item is completed.
