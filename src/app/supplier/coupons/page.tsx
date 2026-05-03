@@ -19,6 +19,10 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -70,6 +74,7 @@ const STATUS_COLORS: Record<CouponState, string> = {
 };
 
 const PAGE_SIZE = 5;
+const DASHBOARD_PANEL_CLASS = 'bg-white border border-slate-200 rounded-lg shadow-sm';
 
 function formatMoney(value: number): string {
   return `R ${Number(value || 0).toFixed(2)}`;
@@ -352,6 +357,32 @@ export default function SupplierCouponsPage() {
     return days;
   }, [rangeCoupons, selectedRange]);
 
+  const trendByDay = useMemo(() => {
+    return valueByDay.map((day) => {
+      const couponCount = rangeCoupons.filter((coupon) => {
+        const activityKey = last14DayKey(couponActivityDate(coupon));
+        return activityKey === day.key;
+      }).length;
+
+      return {
+        ...day,
+        coupons: couponCount,
+      };
+    });
+  }, [rangeCoupons, valueByDay]);
+
+  const mixData = useMemo(() => {
+    return [
+      { name: 'Redeemed', value: analytics.redeemedCount, fill: '#16A34A' },
+      { name: 'Active', value: analytics.active, fill: '#F97316' },
+      {
+        name: 'Closed',
+        value: rangeCoupons.filter((coupon) => coupon.status === 'expired' || coupon.status === 'cancelled').length,
+        fill: '#94A3B8',
+      },
+    ].filter((item) => item.value > 0);
+  }, [analytics.active, analytics.redeemedCount, rangeCoupons]);
+
   const filteredCoupons = useMemo(() => {
     if (filter === 'active') return rangeCoupons.filter((coupon) => isActive(coupon.status));
     if (filter === 'redeemed') return rangeCoupons.filter((coupon) => coupon.status === 'redeemed');
@@ -376,7 +407,7 @@ export default function SupplierCouponsPage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Coupon Analytics" showBack />
+      <TopBar title="Sales Insights" showBack />
 
       <div className="p-6 max-w-3xl mx-auto space-y-6">
         <div className="bg-[var(--card)] border border-[var(--primary)]/30 rounded-2xl p-5">
@@ -473,9 +504,13 @@ export default function SupplierCouponsPage() {
           ].map((metric) => {
             const Icon = metric.icon;
             return (
-              <div key={metric.label} className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 min-h-28">
-                <div className={`${metric.tone} w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>
-                  <Icon className="w-5 h-5" />
+              <div key={metric.label} className={`${DASHBOARD_PANEL_CLASS} p-4 min-h-28 relative overflow-hidden`}>
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-green-500 to-blue-600" />
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className={`${metric.tone} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wide text-slate-400">Live</span>
                 </div>
                 {loading ? (
                   <>
@@ -493,8 +528,51 @@ export default function SupplierCouponsPage() {
           })}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-4">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+        <div className="grid lg:grid-cols-5 gap-4">
+          <div className={`${DASHBOARD_PANEL_CLASS} p-4 lg:col-span-3`}>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-blue-700" />
+                <h2 className="text-lg">Sales Trend</h2>
+              </div>
+              <span className="text-xs text-[var(--muted-foreground)]">{selectedRange.label}</span>
+            </div>
+            <div className="h-64">
+              {loading ? (
+                <div className="h-full bg-[var(--muted)] rounded-xl animate-pulse" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendByDay} margin={{ top: 8, right: 12, bottom: 0, left: -10 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748B' }} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 12, fill: '#64748B' }} tickFormatter={(value) => formatCompactMoney(Number(value))} />
+                    <Tooltip
+                      formatter={(value, name) => (
+                        name === 'value' ? [formatMoney(Number(value)), 'Redeemed value'] : [value, 'Coupons']
+                      )}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#0F3B82"
+                      strokeWidth={3}
+                      dot={{ r: 3, strokeWidth: 2 }}
+                      activeDot={{ r: 5 }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="coupons"
+                      stroke="#16A34A"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div className={`${DASHBOARD_PANEL_CLASS} p-4 lg:col-span-2`}>
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 className="w-5 h-5 text-[var(--foreground)]" />
               <h2 className="text-lg">Coupon Funnel</h2>
@@ -504,12 +582,12 @@ export default function SupplierCouponsPage() {
                 <div className="h-full bg-[var(--muted)] rounded-xl animate-pulse" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={statusData} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={60} />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                  <BarChart data={statusData} layout="vertical" margin={{ top: 4, right: 12, bottom: 4, left: 42 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#E2E8F0" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: '#64748B' }} />
+                    <YAxis type="category" dataKey="label" tick={{ fontSize: 11, fill: '#475569' }} width={74} />
                     <Tooltip />
-                    <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="count" radius={[0, 6, 6, 0]}>
                       {statusData.map((entry) => (
                         <Cell key={entry.status} fill={entry.fill} />
                       ))}
@@ -519,26 +597,81 @@ export default function SupplierCouponsPage() {
               )}
             </div>
           </div>
+        </div>
 
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+        <div className="grid lg:grid-cols-5 gap-4">
+          <div className={`${DASHBOARD_PANEL_CLASS} p-4 lg:col-span-3`}>
             <div className="flex items-center gap-2 mb-4">
-              <CalendarDays className="w-5 h-5 text-[var(--foreground)]" />
+              <CalendarDays className="w-5 h-5 text-green-700" />
               <h2 className="text-lg">Redeemed Value</h2>
             </div>
-            <div className="h-64">
+            <div className="h-56">
               {loading ? (
                 <div className="h-full bg-[var(--muted)] rounded-xl animate-pulse" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={valueByDay} margin={{ top: 8, right: 8, bottom: 0, left: -10 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={1} />
-                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => formatCompactMoney(Number(value))} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748B' }} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 12, fill: '#64748B' }} tickFormatter={(value) => formatCompactMoney(Number(value))} />
                     <Tooltip formatter={(value) => formatMoney(Number(value))} />
                     <Bar dataKey="value" fill="#16A34A" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
+            </div>
+          </div>
+
+          <div className={`${DASHBOARD_PANEL_CLASS} p-4 lg:col-span-2`}>
+            <div className="flex items-center gap-2 mb-4">
+              <Gauge className="w-5 h-5 text-slate-700" />
+              <h2 className="text-lg">Sales Mix</h2>
+            </div>
+            <div className="h-56">
+              {loading ? (
+                <div className="h-full bg-[var(--muted)] rounded-xl animate-pulse" />
+              ) : mixData.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-[var(--muted-foreground)]">
+                  No coupon mix yet.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={mixData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={48}
+                      outerRadius={78}
+                      paddingAngle={3}
+                    >
+                      {mixData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Redeemed', value: analytics.redeemedCount, color: 'bg-green-600' },
+                { label: 'Active', value: analytics.active, color: 'bg-orange-500' },
+                {
+                  label: 'Closed',
+                  value: rangeCoupons.filter((coupon) => coupon.status === 'expired' || coupon.status === 'cancelled').length,
+                  color: 'bg-slate-400',
+                },
+              ].map((item) => (
+                <div key={item.label} className="text-xs">
+                  <div className="flex items-center gap-1 mb-1">
+                    <span className={`w-2 h-2 rounded-full ${item.color}`} />
+                    <span className="text-[var(--muted-foreground)]">{item.label}</span>
+                  </div>
+                  <p>{item.value.toLocaleString()}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
