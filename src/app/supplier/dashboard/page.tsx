@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Badge } from '@/components/Badge';
-import { AlertTriangle, Archive, ClipboardCheck, PackageCheck, ReceiptText } from 'lucide-react';
+import { AlertTriangle, Archive, BarChart3, ClipboardCheck, PackageCheck, ReceiptText } from 'lucide-react';
 import { isLiveMode } from '@/lib/config';
 import { createClient } from '@/lib/supabase/client';
 import { getSupplierNotificationCount } from '@/lib/services/notification-service';
@@ -244,6 +244,19 @@ export default function SupplierDashboard() {
           <div className="flex-1 text-left">
             <h3 className="text-base mb-1">Redeem Coupon</h3>
             <p className="text-sm text-[var(--muted-foreground)]">Verify a client code and record the sale</p>
+          </div>
+        </button>
+
+        <button
+          onClick={() => router.push('/supplier/coupons')}
+          className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-6 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
+        >
+          <div className="bg-[var(--muted)] p-2 rounded-lg">
+            <BarChart3 className="w-5 h-5 text-[var(--foreground)]" />
+          </div>
+          <div className="flex-1 text-left">
+            <h3 className="text-base mb-1">Coupon Analytics</h3>
+            <p className="text-sm text-[var(--muted-foreground)]">Track coupon demand, redemptions, and value</p>
           </div>
         </button>
 

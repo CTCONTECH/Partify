@@ -50,7 +50,8 @@ Use this as the focused checklist for getting Partify from working pilot state t
 - [x] Add supplier QR scan redemption flow.
 - [x] Add client redeemed coupon success handoff.
 - [x] Add redeemed coupon detail view in client coupon history.
-- [ ] Add supplier/admin coupon monitoring view.
+- [x] Add supplier coupon analytics and monitoring view.
+- [ ] Add admin coupon monitoring view.
 - [x] Tighten coupon event permissions so users cannot spoof unrelated coupon events.
 - [ ] Add scheduled stale coupon expiry/rotation job.
 
