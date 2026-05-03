@@ -249,13 +249,16 @@ export default function SupplierDashboard() {
 
         <button
           onClick={() => router.push('/supplier/coupons')}
-          className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-6 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
+          className="w-full bg-[var(--card)] border border-[var(--primary)]/30 rounded-2xl p-4 mb-6 flex items-center gap-3 active:bg-[var(--muted)] transition-colors shadow-sm"
         >
-          <div className="bg-[var(--muted)] p-2 rounded-lg">
-            <BarChart3 className="w-5 h-5 text-[var(--foreground)]" />
+          <div className="bg-blue-50 p-2 rounded-lg">
+            <BarChart3 className="w-5 h-5 text-blue-700" />
           </div>
           <div className="flex-1 text-left">
-            <h3 className="text-base mb-1">Coupon Analytics</h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-base">Sales Insights</h3>
+              <Badge variant="warning" size="sm">Pro</Badge>
+            </div>
             <p className="text-sm text-[var(--muted-foreground)]">Track coupon demand, redemptions, and value</p>
           </div>
         </button>
