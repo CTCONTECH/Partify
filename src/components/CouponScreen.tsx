@@ -14,7 +14,7 @@ import {
 } from '@/lib/services/live-coupon-screen-service';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { Coupon } from '@/types';
-import { AlertCircle, MapPin, Copy, Check, Navigation, Clock, Store, Tag, QrCode } from 'lucide-react';
+import { AlertCircle, MapPin, Copy, Check, Navigation, Clock, Store, Tag, QrCode, CheckCircle2 } from 'lucide-react';
 
 export function CouponScreen() {
   const params = useParams();
@@ -30,6 +30,7 @@ export function CouponScreen() {
   const [redeemUrl, setRedeemUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showRedeemedSuccess, setShowRedeemedSuccess] = useState(false);
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -90,6 +91,34 @@ export function CouponScreen() {
 
     return () => clearInterval(interval);
   }, [coupon]);
+
+  useEffect(() => {
+    if (!coupon || coupon.state === 'redeemed') return;
+
+    const interval = window.setInterval(async () => {
+      try {
+        const latest = await couponService.getCoupon(coupon.id);
+        if (latest) {
+          setCoupon(latest);
+        }
+      } catch {
+        // Keep the current coupon visible if a background refresh fails.
+      }
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [coupon]);
+
+  useEffect(() => {
+    if (coupon?.state !== 'redeemed') return;
+
+    setShowRedeemedSuccess(true);
+    const redirect = window.setTimeout(() => {
+      router.replace('/client/home?couponRedeemed=1');
+    }, 1600);
+
+    return () => window.clearTimeout(redirect);
+  }, [coupon?.state, router]);
 
   useEffect(() => {
     if (!coupon || typeof window === 'undefined') return;
@@ -153,6 +182,22 @@ export function CouponScreen() {
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{error || 'Coupon not found.'}</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showRedeemedSuccess) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-9 h-9 text-green-700" />
+          </div>
+          <h1 className="text-2xl mb-2">Coupon Redeemed</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Your coupon has been recorded by the supplier.
+          </p>
         </div>
       </div>
     );

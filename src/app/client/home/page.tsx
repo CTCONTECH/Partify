@@ -16,6 +16,17 @@ export default function ClientHome() {
   const [vehicle, setVehicle] = useState<string | null>(null);
   const [vehicleLoading, setVehicleLoading] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [couponRedeemedNotice, setCouponRedeemedNotice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('couponRedeemed') === '1') {
+      setCouponRedeemedNotice(true);
+      window.history.replaceState(null, '', '/client/home');
+    }
+  }, []);
 
   useEffect(() => {
     const loadVehicle = async () => {
@@ -43,6 +54,12 @@ export default function ClientHome() {
       <TopBar showLogo showNotifications notificationCount={notificationCount} />
 
       <div className="p-6 max-w-2xl mx-auto">
+        {couponRedeemedNotice && (
+          <div className="bg-green-50 border border-green-200 text-green-700 rounded-2xl p-4 mb-6">
+            <p className="text-sm">Coupon redeemed successfully.</p>
+          </div>
+        )}
+
         <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white">
           <h2 className="text-2xl mb-2">Find your part</h2>
           <p className="text-white/90 mb-6">Compare prices across Cape Town suppliers</p>
