@@ -40,12 +40,16 @@ Use this as the focused checklist for getting Partify from working pilot state t
 
 - [x] Issue live coupons from supplier/part context.
 - [x] Store coupon issue/open/navigation events through live services.
-- [ ] Confirm coupon issue flow works on `partify.africa` with live data.
+- [x] Confirm coupon issue flow works on `partify.africa` with live data.
 - [x] Add client coupon history / "My Coupons".
-- [ ] Decide supplier redemption model for MVP.
+- [x] Fix coupon event trigger so `coupon_issued` does not break lifecycle logging.
+- [x] Prevent duplicate active coupons for the same client, supplier, and part.
+- [x] Make client coupon issue/view/navigation event logging idempotent.
+- [x] Decide supplier redemption model for MVP.
+- [ ] Add supplier coupon redemption flow.
 - [ ] Add supplier/admin coupon monitoring view.
 - [x] Tighten coupon event permissions so users cannot spoof unrelated coupon events.
-- [ ] Rotate/expire stale coupons correctly.
+- [ ] Add scheduled stale coupon expiry/rotation job.
 
 ## P1 - Supplier Import Hardening
 
@@ -102,7 +106,7 @@ Use this as the focused checklist for getting Partify from working pilot state t
 ## Today's Suggested Order
 
 1. Remove old Netlify/local auth redirect URLs after final production auth verification.
-2. Confirm coupon issue flow works on `partify.africa` with live data.
-3. Decide supplier redemption model for MVP.
+2. Decide supplier redemption model for MVP.
+3. Add supplier coupon redemption flow.
 4. Start supplier import hardening with robust CSV parsing.
 5. Update this checklist as each item is completed.

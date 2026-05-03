@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Badge } from '@/components/Badge';
-import { AlertTriangle, Archive, ClipboardCheck, PackageCheck } from 'lucide-react';
+import { AlertTriangle, Archive, ClipboardCheck, PackageCheck, ReceiptText } from 'lucide-react';
 import { isLiveMode } from '@/lib/config';
 import { createClient } from '@/lib/supabase/client';
 import { getSupplierNotificationCount } from '@/lib/services/notification-service';
@@ -216,6 +216,19 @@ export default function SupplierDashboard() {
             );
           })}
         </div>
+
+        <button
+          onClick={() => router.push('/supplier/redeem')}
+          className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-6 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
+        >
+          <div className="bg-[var(--muted)] p-2 rounded-lg">
+            <ReceiptText className="w-5 h-5 text-[var(--foreground)]" />
+          </div>
+          <div className="flex-1 text-left">
+            <h3 className="text-base mb-1">Redeem Coupon</h3>
+            <p className="text-sm text-[var(--muted-foreground)]">Verify a client code and record the sale</p>
+          </div>
+        </button>
 
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg">Recent Activity</h3>
