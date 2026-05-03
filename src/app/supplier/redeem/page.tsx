@@ -149,14 +149,13 @@ export default function SupplierRedeemPage() {
       streamRef.current = stream;
       setScanning(true);
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-
       const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
       const scan = async () => {
         if (!streamRef.current || !videoRef.current) return;
+        if (videoRef.current.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+          window.setTimeout(scan, 250);
+          return;
+        }
 
         const results = await detector.detect(videoRef.current);
         const rawValue = results[0]?.rawValue;
@@ -178,6 +177,16 @@ export default function SupplierRedeemPage() {
       setError('Could not access the camera. Type the coupon code instead.');
     }
   }, [stopScanner, verifyCoupon]);
+
+  useEffect(() => {
+    if (!scanning || !streamRef.current || !videoRef.current) return;
+
+    videoRef.current.srcObject = streamRef.current;
+    videoRef.current.play().catch(() => {
+      stopScanner();
+      setError('Could not start the camera preview. Type the coupon code instead.');
+    });
+  }, [scanning, stopScanner]);
 
   useEffect(() => {
     const loadSupplier = async () => {
