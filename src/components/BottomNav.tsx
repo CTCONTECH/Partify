@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Search, User, Package } from 'lucide-react';
+import { Home, Search, User, Package, Ticket } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -22,6 +22,7 @@ export function BottomNav({ role }: BottomNavProps) {
   const clientNav: NavItem[] = [
     { icon: Home, label: 'Home', path: '/client/home' },
     { icon: Search, label: 'Search', path: '/client/search' },
+    { icon: Ticket, label: 'Coupons', path: '/client/coupons' },
     { icon: User, label: 'Profile', path: '/client/profile' }
   ];
 

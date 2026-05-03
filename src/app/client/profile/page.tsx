@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { signOut } from '@/lib/auth/client';
 import { vehicleService } from '@/lib/services/vehicle-service';
 import { formatVehicle } from '@/lib/vehicle-catalog';
-import { AlertCircle, Car, Bell, HelpCircle, LogOut, ChevronRight, MapPin, Search } from 'lucide-react';
+import { AlertCircle, Car, Bell, HelpCircle, LogOut, ChevronRight, MapPin, Search, Ticket } from 'lucide-react';
 
 interface ClientProfileInfo {
   name: string;
@@ -140,6 +140,19 @@ export default function ClientProfile() {
               <p className="text-sm text-[var(--muted-foreground)]">
                 {loading ? 'Loading...' : profile.vehicle || 'Not set'}
               </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-[var(--muted-foreground)]" />
+          </button>
+
+          <button
+            onClick={() => router.push('/client/coupons')}
+            className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
+          >
+            <div className="bg-[var(--muted)] p-2 rounded-lg">
+              <Ticket className="w-5 h-5 text-[var(--foreground)]" />
+            </div>
+            <div className="flex-1 text-left">
+              <h4 className="text-base">My Coupons</h4>
             </div>
             <ChevronRight className="w-5 h-5 text-[var(--muted-foreground)]" />
           </button>

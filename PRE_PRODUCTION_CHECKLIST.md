@@ -1,6 +1,6 @@
 # Partify Pre-Production Checklist
 
-Last updated: 2026-05-02
+Last updated: 2026-05-03
 
 Use this as the focused checklist for getting Partify from working pilot state to pre-production readiness. This list is intentionally practical and ordered by launch risk.
 
@@ -32,8 +32,8 @@ Use this as the focused checklist for getting Partify from working pilot state t
 - [x] Verify unauthenticated users cannot read or mutate private data.
 - [x] Confirm only PostGIS/system metadata tables remain publicly exposed to `anon` outside intended public catalogue tables.
 - [x] Define data retention and deletion process.
-- [ ] Define breach response process.
-- [ ] Document privacy contact / Information Officer responsibility.
+- [x] Define breach response process.
+- [x] Document privacy contact / Information Officer responsibility.
 - [ ] Attorney review of Terms and Privacy Policy before public launch.
 
 ## P0 - Coupon Flow
@@ -41,10 +41,10 @@ Use this as the focused checklist for getting Partify from working pilot state t
 - [x] Issue live coupons from supplier/part context.
 - [x] Store coupon issue/open/navigation events through live services.
 - [ ] Confirm coupon issue flow works on `partify.africa` with live data.
-- [ ] Add client coupon history / "My Coupons".
+- [x] Add client coupon history / "My Coupons".
 - [ ] Decide supplier redemption model for MVP.
 - [ ] Add supplier/admin coupon monitoring view.
-- [ ] Tighten coupon event permissions so users cannot spoof unrelated coupon events.
+- [x] Tighten coupon event permissions so users cannot spoof unrelated coupon events.
 - [ ] Rotate/expire stale coupons correctly.
 
 ## P1 - Supplier Import Hardening
@@ -101,10 +101,8 @@ Use this as the focused checklist for getting Partify from working pilot state t
 
 ## Today's Suggested Order
 
-1. Confirm auth/email on `partify.africa`.
-2. Rotate Brevo SMTP password after successful email tests.
-3. Fix any auth/email defects found during testing.
-4. Add client coupon history.
-5. Tighten coupon event permissions.
-6. Start supplier import hardening with robust CSV parsing.
-7. Update this checklist as each item is completed.
+1. Remove old Netlify/local auth redirect URLs after final production auth verification.
+2. Confirm coupon issue flow works on `partify.africa` with live data.
+3. Decide supplier redemption model for MVP.
+4. Start supplier import hardening with robust CSV parsing.
+5. Update this checklist as each item is completed.

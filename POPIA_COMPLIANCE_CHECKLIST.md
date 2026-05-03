@@ -1,6 +1,6 @@
 # Partify POPIA Compliance Checklist
 
-Last updated: 2026-04-30
+Last updated: 2026-05-03
 
 This is the operational checklist for reducing POPIA and data-breach risk before launch. It does not replace legal advice, but it gives us a practical build-and-audit path.
 
@@ -10,7 +10,8 @@ This is the operational checklist for reducing POPIA and data-breach risk before
 - [x] Publish Terms of Service page.
 - [ ] Attorney review of Terms and Privacy Policy for South African launch.
 - [ ] Confirm responsible party details and final legal entity name.
-- [ ] Appoint and document the Information Officer / privacy contact.
+- [ ] Appoint final Information Officer once the responsible party / legal entity is confirmed.
+- [x] Document operational privacy contact and Information Officer responsibility.
 - [ ] Register or confirm Information Officer requirements with the Information Regulator if applicable.
 - [ ] Map all personal information collected: clients, suppliers, support, location, coupons, auth, logs.
 - [ ] Document purpose for each data category.
@@ -20,7 +21,7 @@ This is the operational checklist for reducing POPIA and data-breach risk before
 - [ ] Complete final RLS audit for all public tables.
 - [ ] Add abuse/rate-limit controls for auth, password reset, coupon issuing, imports, and support actions.
 - [ ] Add centralized error monitoring with sensitive-data scrubbing.
-- [ ] Define incident response and POPIA breach notification process.
+- [x] Define incident response and POPIA breach notification process.
 - [x] Define data retention periods for accounts, vehicle data, supplier data, coupon events, import logs, and support messages.
 - [x] Define account deletion and data export request workflow.
 
@@ -56,12 +57,31 @@ This is the operational checklist for reducing POPIA and data-breach risk before
 
 ## Breach Response Minimum
 
-1. Contain the incident and stop unauthorized access.
-2. Preserve logs and evidence.
-3. Identify affected users, data categories, and exposure window.
-4. Notify the Information Regulator and affected data subjects where POPIA requires it.
-5. Rotate affected credentials/secrets.
-6. Document root cause and corrective actions.
+Operational owner: the Partify operator / responsible party must coordinate breach handling until a final Information Officer is appointed.
+
+Privacy and breach intake: `support@partify.africa`.
+
+1. Triage and contain the incident as soon as it is discovered: disable affected features, revoke exposed sessions or credentials, pause risky integrations, and stop further unauthorized access.
+2. Preserve logs and evidence before cleanup: Supabase auth/database logs, Netlify deploy/runtime logs, email provider logs, support mailbox messages, and relevant app screenshots or exports.
+3. Identify affected users, data categories, systems, and the likely exposure window.
+4. Assess whether POPIA notification duties are triggered. Where required, notify the Information Regulator and affected data subjects as soon as reasonably possible.
+5. Rotate affected credentials/secrets, including Supabase service keys, SMTP credentials, API keys, database credentials, and admin passwords where relevant.
+6. Communicate clearly with affected users: what happened, what data was involved, what Partify has done, and what users should do next.
+7. Document the root cause, timeline, decisions made, notifications sent, and corrective actions.
+8. Add a follow-up task to prevent recurrence, such as RLS policy updates, rate limits, monitoring alerts, dependency fixes, or access reviews.
+
+## Privacy Contact And Information Officer Responsibility
+
+Operational privacy contact: `support@partify.africa`.
+
+Until the final legal entity and appointed Information Officer are confirmed, the Partify operator is responsible for:
+
+1. Receiving and tracking privacy, deletion, export, correction, and breach-related requests.
+2. Verifying requester identity through control of the account email address before disclosing or deleting personal information.
+3. Coordinating POPIA breach assessment and notification decisions.
+4. Maintaining the retention, deletion, third-party operator, and incident records.
+5. Ensuring Supabase, Netlify, Brevo, HostAfrica, and any future monitoring/maps providers are reviewed as third-party operators.
+6. Escalating Terms, Privacy Policy, Information Officer appointment, and notification obligations for attorney review before public launch.
 
 ## Retention Schedule
 
