@@ -34,6 +34,7 @@ Use this as the focused checklist for getting Partify from working pilot state t
 - [x] Define data retention and deletion process.
 - [x] Define breach response process.
 - [x] Document privacy contact / Information Officer responsibility.
+- [x] Add supplier-only browser idle timeout while keeping client sessions persistent for UX.
 - [ ] Attorney review of Terms and Privacy Policy before public launch.
 
 ## P0 - Coupon Flow

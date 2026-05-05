@@ -3,6 +3,7 @@
 import { Home, Search, User, Package, Ticket, ReceiptText } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useSupplierIdleTimeout } from '@/hooks/useSupplierIdleTimeout';
 
 interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
@@ -18,6 +19,7 @@ export function BottomNav({ role }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+  useSupplierIdleTimeout(role === 'supplier');
 
   const clientNav: NavItem[] = [
     { icon: Home, label: 'Home', path: '/client/home' },

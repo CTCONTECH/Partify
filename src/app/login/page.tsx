@@ -20,6 +20,11 @@ function LoginForm() {
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const showResendConfirmation = error?.toLowerCase().includes('email not confirmed');
+  const reason = searchParams.get('reason');
+  const sessionMessage =
+    reason === 'session_expired'
+      ? 'Your supplier session expired after a period of inactivity. Please log in again.'
+      : null;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +104,12 @@ function LoginForm() {
         <p className="text-[var(--muted-foreground)] text-center mb-8">
           Log in to continue
         </p>
+
+        {sessionMessage && (
+          <div className="mb-6 border border-[var(--border)] bg-[var(--muted)] px-4 py-3 text-sm text-[var(--foreground)]">
+            {sessionMessage}
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-4 mb-6">
           <Input
