@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Papa from 'papaparse';
-import { AlertCircle, CheckCircle2, FileText, Upload, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, FileText, Upload, X } from 'lucide-react';
 import { TopBar } from '@/components/TopBar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
@@ -276,8 +276,9 @@ export default function SupplierImportPage() {
             <button
               type="button"
               onClick={() => router.push('/supplier/inventory')}
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--primary)] mb-2"
+              className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
             >
+              <ArrowLeft className="w-4 h-4" />
               Back to inventory
             </button>
             <h1 className="text-3xl">Import Inventory</h1>

@@ -3,13 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
+import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { Badge } from '@/components/Badge';
 import { useSupplierId } from '@/hooks/useSupplierId';
 import { supplierService } from '@/lib/services/supplier-service';
 import { InventoryItem } from '@/types';
-import { AlertCircle, Ban, FileUp, Minus, Package, Plus } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Ban, FileUp, Minus, Package, Plus } from 'lucide-react';
 
 function stockVariant(stock: number) {
   if (stock === 0) return 'out-of-stock';
@@ -117,10 +118,28 @@ export default function EditInventoryItem() {
   const currentStock = Number.parseInt(stock || '0', 10) || 0;
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Edit Item" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Edit Item" showBack />
+      </div>
 
-      <div className="p-6 max-w-md mx-auto">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto">
+        <div className="hidden xl:block mb-6">
+          <button
+            type="button"
+            onClick={() => router.push('/supplier/inventory')}
+            className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to inventory
+          </button>
+          <h1 className="text-3xl">Edit Inventory Item</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Update price and stock for a single live inventory item.
+          </p>
+        </div>
+
+        <div className="xl:max-w-5xl">
         {loading ? (
           <div className="space-y-4 animate-pulse">
             <div className="h-28 bg-[var(--muted)] rounded-2xl" />
@@ -130,7 +149,7 @@ export default function EditInventoryItem() {
         ) : (
           <>
             {item && (
-              <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-6">
+              <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 mb-6">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm text-[var(--muted-foreground)] mb-1">
@@ -162,7 +181,8 @@ export default function EditInventoryItem() {
             )}
 
             {item && (
-              <form onSubmit={handleSave} className="space-y-5">
+              <form onSubmit={handleSave} className="space-y-5 xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-6 xl:space-y-0 xl:items-start">
+                <div className="space-y-5">
                 <div className="bg-[var(--muted)] border border-[var(--border)] rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <FileUp className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
@@ -245,8 +265,15 @@ export default function EditInventoryItem() {
                     This item is treated as low stock when quantity is below 5.
                   </p>
                 </div>
+                </div>
 
-                <div className="pt-3 space-y-3">
+                <div className="pt-3 xl:pt-0 space-y-3">
+                  <div className="hidden xl:block bg-[var(--card)] border border-[var(--border)] rounded-lg p-4">
+                    <h3 className="text-base mb-1">Save correction</h3>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      Changes update this supplier listing immediately.
+                    </p>
+                  </div>
                   <Button type="submit" fullWidth size="lg" disabled={saving}>
                     {saving ? 'Saving...' : 'Save Changes'}
                   </Button>
@@ -264,7 +291,9 @@ export default function EditInventoryItem() {
             )}
           </>
         )}
+        </div>
       </div>
+      <BottomNav role="supplier" />
     </div>
   );
 }

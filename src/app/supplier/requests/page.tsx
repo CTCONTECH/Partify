@@ -14,7 +14,7 @@ import {
   ImportDisplayState,
 } from '@/lib/import-status';
 import { ImportJob } from '@/types';
-import { ChevronRight, FileWarning, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, ChevronRight, FileWarning, Clock, CheckCircle2, XCircle } from 'lucide-react';
 
 function statusVariant(state: ImportDisplayState) {
   if (state === 'imported') return 'success';
@@ -111,8 +111,9 @@ export default function SupplierRequestsPage() {
             <button
               type="button"
               onClick={() => router.push('/supplier/inventory')}
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--primary)] mb-2"
+              className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
             >
+              <ArrowLeft className="w-4 h-4" />
               Back to inventory
             </button>
             <h1 className="text-3xl">Part Requests</h1>

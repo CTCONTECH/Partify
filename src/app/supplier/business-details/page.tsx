@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
+import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { createClient } from '@/lib/supabase/client';
 import { geocodeBusinessAddress, GeocodedAddress } from '@/lib/geocoding';
-import { Building2, CheckCircle2, MapPin, Navigation } from 'lucide-react';
+import { ArrowLeft, Building2, CheckCircle2, MapPin, Navigation } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -115,12 +116,30 @@ export default function SupplierBusinessDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Business Details" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Business Details" showBack />
+      </div>
 
-      <div className="p-6 max-w-md mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto">
+        <div className="hidden xl:block mb-6">
+          <button
+            type="button"
+            onClick={() => router.push('/supplier/profile')}
+            className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to profile
+          </button>
+          <h1 className="text-3xl">Business Details</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Keep supplier trading details and distance location accurate for customers.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5 xl:grid xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-6 xl:space-y-0 xl:items-start">
+          <div className="space-y-5">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4">
             <div className="flex items-start gap-3">
               <CheckCircle2 className="w-5 h-5 text-[var(--success)] flex-shrink-0 mt-0.5" />
               <div>
@@ -168,7 +187,31 @@ export default function SupplierBusinessDetailsPage() {
             required
           />
 
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 xl:hidden">
+            <div className="flex items-start gap-3">
+              <Navigation className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">Distance location</p>
+                <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                  {hasSavedLocation
+                    ? 'Coordinates are saved from the primary business address.'
+                    : 'Save changes to verify the primary address and create supplier distance coordinates.'}
+                </p>
+                {verifiedAddress && (
+                  <p className="text-xs text-[var(--success)] mt-2">
+                    Verified: {verifiedAddress.label}
+                  </p>
+                )}
+                <p className="text-xs text-[var(--muted-foreground)] mt-2">
+                  This address powers nearest-supplier results and is shown to customers.
+                </p>
+              </div>
+            </div>
+          </div>
+          </div>
+
+          <div className="space-y-5">
+          <div className="hidden xl:block bg-[var(--card)] border border-[var(--border)] rounded-lg p-4">
             <div className="flex items-start gap-3">
               <Navigation className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -210,8 +253,11 @@ export default function SupplierBusinessDetailsPage() {
           >
             {submitting ? 'Verifying address...' : 'Save Changes'}
           </Button>
+          </div>
         </form>
       </div>
+
+      <BottomNav role="supplier" />
     </div>
   );
 }

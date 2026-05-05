@@ -506,13 +506,31 @@ export default function AddPartPage() {
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [manualSeed, setManualSeed] = useState('');
   const { supplierId, loading } = useSupplierId();
+  const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Add Part" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Add Part" showBack />
+      </div>
+
+      <div className="hidden xl:block px-10 pt-8 max-w-7xl mx-auto">
+        <button
+          type="button"
+          onClick={() => router.push('/supplier/inventory')}
+          className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to inventory
+        </button>
+        <h1 className="text-3xl">Add Part</h1>
+        <p className="text-sm text-[var(--muted-foreground)]">
+          Search the catalogue or submit a new supplier part for review.
+        </p>
+      </div>
 
       {/* Step indicator */}
-      <div className="px-6 pt-4 pb-0 max-w-2xl mx-auto">
+      <div className="px-6 xl:px-10 pt-4 xl:pt-6 pb-0 max-w-2xl xl:max-w-7xl mx-auto">
         <div className="flex items-center gap-2 mb-6">
           <div className={`flex items-center gap-1.5 text-xs font-medium ${!selectedPart && !manualSeed ? 'text-[var(--primary)]' : 'text-[var(--muted-foreground)]'}`}>
             {selectedPart || manualSeed
@@ -531,7 +549,7 @@ export default function AddPartPage() {
         </div>
       </div>
 
-      <div className="px-6 max-w-2xl mx-auto">
+      <div className="px-6 xl:px-10 max-w-2xl xl:max-w-5xl mx-auto">
         {loading ? (
           <div className="space-y-3 animate-pulse">
             {[...Array(4)].map((_, i) => (

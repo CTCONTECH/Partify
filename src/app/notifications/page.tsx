@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
+import { BottomNav } from '@/components/BottomNav';
 import { createClient } from '@/lib/supabase/client';
 import {
   ClientNotification,
@@ -12,7 +13,7 @@ import {
   markSupplierNotificationRead,
   SupplierNotification
 } from '@/lib/services/notification-service';
-import { AlertTriangle, Car, ClipboardList, Package, Ticket, Wrench, XCircle } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Car, ClipboardList, Package, Ticket, Wrench, XCircle } from 'lucide-react';
 
 type AppNotification = SupplierNotification | ClientNotification;
 type NotificationMode = 'client' | 'supplier';
@@ -114,12 +115,31 @@ export default function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)]">
-      <TopBar title="Notifications" showBack />
+    <div className={`min-h-screen bg-[var(--background)] ${mode === 'supplier' ? 'xl:pl-64 xl:pb-8' : ''}`}>
+      <div className={mode === 'supplier' ? 'xl:hidden' : ''}>
+        <TopBar title="Notifications" showBack />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className={`p-6 ${mode === 'supplier' ? 'xl:px-10 xl:py-8 xl:max-w-7xl' : 'max-w-2xl'} mx-auto`}>
+        {mode === 'supplier' && (
+          <div className="hidden xl:block mb-6">
+            <button
+              type="button"
+              onClick={() => router.push('/supplier/profile')}
+              className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to profile
+            </button>
+            <h1 className="text-3xl">Notifications</h1>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Supplier alerts for stock, imports, requests, and operational updates.
+            </p>
+          </div>
+        )}
+
         {error && (
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl xl:rounded-lg p-4 mb-4">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{error}</p>
           </div>
@@ -128,13 +148,20 @@ export default function Notifications() {
         {loading && (
           <div className="space-y-3">
             {[...Array(3)].map((_, index) => (
-              <div key={index} className="h-24 bg-[var(--muted)] rounded-2xl animate-pulse" />
+              <div key={index} className="h-24 bg-[var(--muted)] rounded-2xl xl:rounded-lg animate-pulse" />
             ))}
           </div>
         )}
 
         {!loading && notifications.length > 0 && (
-          <div className="space-y-3">
+          <div className={mode === 'supplier' ? 'space-y-3 xl:bg-[var(--card)] xl:border xl:border-[var(--border)] xl:rounded-lg xl:overflow-hidden xl:space-y-0' : 'space-y-3'}>
+            {mode === 'supplier' && (
+              <div className="hidden xl:grid grid-cols-[minmax(0,1fr)_160px_90px] gap-3 px-4 py-3 bg-[var(--muted)] text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+                <span>Notification</span>
+                <span>Type</span>
+                <span>Status</span>
+              </div>
+            )}
             {notifications.map((notification) => {
               const Icon = notificationIcon(notification.type);
 
@@ -142,7 +169,9 @@ export default function Notifications() {
                 <button
                   key={notification.id}
                   onClick={() => handleNotificationClick(notification.id)}
-                  className="w-full text-left bg-[var(--card)] border border-[var(--border)] border-l-4 border-l-[var(--primary)] rounded-2xl p-4 active:scale-[0.99] transition-transform"
+                  className={`w-full text-left bg-[var(--card)] border border-[var(--border)] border-l-4 border-l-[var(--primary)] rounded-2xl p-4 active:scale-[0.99] transition-transform ${
+                    mode === 'supplier' ? 'xl:border-0 xl:border-l-4 xl:border-b xl:last:border-b-0 xl:rounded-none xl:grid xl:grid-cols-[minmax(0,1fr)_160px_90px] xl:items-center xl:gap-3 xl:active:scale-100 xl:hover:bg-[var(--muted)]' : ''
+                  }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className={`p-2 rounded-lg ${notificationTone(notification.type)}`}>
@@ -163,6 +192,16 @@ export default function Notifications() {
                       </p>
                     </div>
                   </div>
+                  {mode === 'supplier' && (
+                    <>
+                      <span className="hidden xl:inline text-xs text-[var(--muted-foreground)]">
+                        {notification.type.replaceAll('-', ' ')}
+                      </span>
+                      <span className="hidden xl:inline text-xs text-[var(--muted-foreground)]">
+                        {notification.read ? 'Read' : 'Unread'}
+                      </span>
+                    </>
+                  )}
                 </button>
               );
             })}
@@ -180,6 +219,7 @@ export default function Notifications() {
           </div>
         )}
       </div>
+      {mode === 'supplier' && <BottomNav role="supplier" />}
     </div>
   );
 }

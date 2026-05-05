@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
+  ArrowLeft,
   BarChart3,
   CalendarDays,
   CheckCircle2,
@@ -417,8 +418,9 @@ export default function SupplierCouponsPage() {
             <button
               type="button"
               onClick={() => router.push('/supplier/dashboard')}
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--primary)] mb-2"
+              className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
             >
+              <ArrowLeft className="w-4 h-4" />
               Back to dashboard
             </button>
             <h1 className="text-3xl">Sales Insights</h1>

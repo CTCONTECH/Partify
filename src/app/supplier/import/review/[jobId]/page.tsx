@@ -9,7 +9,7 @@ import { Badge } from '@/components/Badge';
 import { getImportRepository, getPartsRepository } from '@/lib/adapters/factory';
 import { getImportDisplayState, importDisplayDescription, importDisplayLabel, ImportDisplayState } from '@/lib/import-status';
 import { ImportJob, ImportRow, Part } from '@/types';
-import { CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react';
 
 function parseManualDescription(rawDescription?: string) {
   if (!rawDescription?.includes('PART:')) return null;
@@ -292,8 +292,9 @@ export default function ImportReviewPage() {
             <button
               type="button"
               onClick={() => router.push('/supplier/import')}
-              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--primary)] mb-2"
+              className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
             >
+              <ArrowLeft className="w-4 h-4" />
               Back to import
             </button>
             <h1 className="text-3xl">Review Import</h1>

@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
+import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/Button';
-import { AlertCircle, FileUp, HelpCircle, MapPin, PackageCheck } from 'lucide-react';
+import { AlertCircle, ArrowLeft, FileUp, HelpCircle, MapPin, PackageCheck } from 'lucide-react';
 
 const supportItems = [
   {
@@ -38,11 +39,28 @@ export default function SupplierHelpPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Help & Support" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Help & Support" showBack />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto space-y-5">
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto space-y-5">
+        <div className="hidden xl:block">
+          <button
+            type="button"
+            onClick={() => router.push('/supplier/profile')}
+            className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to profile
+          </button>
+          <h1 className="text-3xl">Help & Support</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Supplier guidance for catalogue accuracy, inventory updates, and support.
+          </p>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-5">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-[var(--muted)] flex items-center justify-center flex-shrink-0">
               <HelpCircle className="w-5 h-5 text-[var(--primary)]" />
@@ -56,14 +74,14 @@ export default function SupplierHelpPage() {
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0">
           {supportItems.map((item) => {
             const Icon = item.icon;
 
             return (
               <div
                 key={item.title}
-                className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4"
+                className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-lg bg-[var(--muted)] flex items-center justify-center flex-shrink-0">
@@ -79,7 +97,8 @@ export default function SupplierHelpPage() {
           })}
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
+        <div className="xl:grid xl:grid-cols-2 xl:gap-4">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-5">
           <h3 className="text-base mb-2">Need direct help?</h3>
           <p className="text-sm text-[var(--muted-foreground)] mb-4">
             Message Partify support on WhatsApp with your business name and a short description of the issue.
@@ -94,7 +113,7 @@ export default function SupplierHelpPage() {
           </Button>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-5 mt-5 xl:mt-0">
           <h3 className="text-base mb-2">Legal and privacy</h3>
           <div className="flex flex-wrap gap-4 text-sm">
             <Link href="/terms" className="text-[var(--primary)] underline">
@@ -104,6 +123,7 @@ export default function SupplierHelpPage() {
               Privacy Policy
             </Link>
           </div>
+        </div>
         </div>
 
         <Button
@@ -116,6 +136,8 @@ export default function SupplierHelpPage() {
           Back
         </Button>
       </div>
+
+      <BottomNav role="supplier" />
     </div>
   );
 }

@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
+import { BottomNav } from '@/components/BottomNav';
 import { Badge } from '@/components/Badge';
 import { createClient } from '@/lib/supabase/client';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface ActivityItem {
   id: string;
@@ -86,12 +87,29 @@ export default function SupplierActivityPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Activity" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Activity" showBack />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto">
+        <div className="hidden xl:block mb-6">
+          <button
+            type="button"
+            onClick={() => router.push('/supplier/dashboard')}
+            className="inline-flex items-center gap-2 h-10 px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--foreground)] hover:bg-[var(--muted)] mb-3"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to dashboard
+          </button>
+          <h1 className="text-3xl">Activity</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Review recent supplier imports, stock changes, and operational events.
+          </p>
+        </div>
+
         {error && (
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4 mb-4">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl xl:rounded-lg p-4 mb-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{error}</p>
           </div>
@@ -100,30 +118,35 @@ export default function SupplierActivityPage() {
         {loading && (
           <div className="space-y-3">
             {[...Array(5)].map((_, index) => (
-              <div key={index} className="h-20 bg-[var(--muted)] rounded-2xl animate-pulse" />
+              <div key={index} className="h-20 bg-[var(--muted)] rounded-2xl xl:rounded-lg animate-pulse" />
             ))}
           </div>
         )}
 
         {!loading && activity.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-3 xl:bg-[var(--card)] xl:border xl:border-[var(--border)] xl:rounded-lg xl:overflow-hidden xl:space-y-0">
+            <div className="hidden xl:grid grid-cols-[minmax(0,1fr)_210px_130px] gap-3 px-4 py-3 bg-[var(--muted)] text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+              <span>Activity</span>
+              <span>Event</span>
+              <span>Time</span>
+            </div>
             {activity.map((item) => (
               <div
                 key={item.id}
-                className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4"
+                className="bg-[var(--card)] border border-[var(--border)] xl:border-0 xl:border-b xl:last:border-b-0 rounded-2xl xl:rounded-none p-4"
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex xl:grid xl:grid-cols-[minmax(0,1fr)_210px_130px] items-start xl:items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-base">{item.title}</h3>
-                      <Badge variant={activityTone(item.eventType) as any} size="sm">
-                        {item.eventType.replaceAll('_', ' ')}
-                      </Badge>
                     </div>
                     {item.detail && (
                       <p className="text-sm text-[var(--muted-foreground)]">{item.detail}</p>
                     )}
                   </div>
+                  <Badge variant={activityTone(item.eventType) as any} size="sm">
+                    {item.eventType.replaceAll('_', ' ')}
+                  </Badge>
                   <p className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">
                     {formatActivityTime(item.createdAt)}
                   </p>
@@ -142,6 +165,8 @@ export default function SupplierActivityPage() {
           </div>
         )}
       </div>
+
+      <BottomNav role="supplier" />
     </div>
   );
 }
