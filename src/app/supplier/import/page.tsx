@@ -92,6 +92,15 @@ function rowToRawString(record: CsvRecord): string {
 
 async function hashFile(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
+  if (!crypto.subtle) {
+    let hash = 2166136261;
+    for (const byte of new Uint8Array(buffer)) {
+      hash ^= byte;
+      hash = Math.imul(hash, 16777619);
+    }
+    return `fnv1a-${hash >>> 0}-${file.size}`;
+  }
+
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
   return Array.from(new Uint8Array(hashBuffer))
     .map((byte) => byte.toString(16).padStart(2, '0'))
@@ -149,6 +158,8 @@ function parseCSV(text: string): ParsedRow[] {
     const errors: string[] = [];
 
     if (!rawPartNumber) errors.push('Missing part number');
+    if (price === undefined) errors.push('Price is required');
+    if (stock === undefined) errors.push('Stock is required');
     if (Number.isNaN(price)) errors.push('Invalid price');
     if (Number.isNaN(stock)) errors.push('Invalid stock');
     if (price !== undefined && !Number.isNaN(price) && price < 0) errors.push('Price cannot be negative');

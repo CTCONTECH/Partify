@@ -67,13 +67,13 @@ Use this as the focused checklist for getting Partify from working pilot state t
 - [x] Add clearer supplier-facing import states: imported, needs review, approved, rejected, catalogue review.
 
 Supplier import QA after remaining hardening:
-- [ ] Upload normal CSV rows and confirm staging/review loads correctly.
-- [ ] Upload CSV with a quoted comma in the description and confirm columns stay aligned.
-- [ ] Upload CSV with alternate headers such as `SKU,Name,Unit Price,Qty`.
-- [ ] Upload an unknown supplier part number and confirm it stays in review.
-- [ ] Upload the same CSV twice while the first job is still in review and confirm it opens the existing job instead of creating duplicate staging rows.
-- [ ] Upload rows with missing/negative price or stock and confirm they are marked as row errors.
-- [ ] Approve matched rows and confirm live inventory updates existing rows instead of creating duplicates.
+- [x] Upload normal CSV rows and confirm staging/review loads correctly.
+- [x] Upload CSV with a quoted comma in the description and confirm columns stay aligned.
+- [x] Upload CSV with alternate headers such as `SKU,Name,Unit Price,Qty`.
+- [x] Upload an unknown supplier part number and confirm it stays in review.
+- [x] Upload the same CSV twice while the first job is still in review and confirm it opens the existing job instead of creating duplicate staging rows.
+- [x] Upload rows with missing/negative price or stock and confirm they are marked as row errors.
+- [x] Approve matched rows and confirm live inventory updates existing rows instead of creating duplicates.
 
 ## P1 - Catalogue And Fitment Accuracy
 

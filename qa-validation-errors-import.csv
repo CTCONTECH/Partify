@@ -1,0 +1,6 @@
+part_number,description,price,stock
+BAD-NEG-PRICE,Negative price,-10,5
+BAD-NEG-STOCK,Negative stock,50,-1
+BAD-MISSING-PRICE,Missing price,,3
+BAD-MISSING-STOCK,Missing stock,50,
+,Missing part number,10,1

@@ -326,7 +326,9 @@ export default function ImportReviewPage() {
               <p className="text-xs text-amber-700">
                 {hasCatalogCandidate
                   ? 'This submission includes a part that is not yet in the canonical catalog. It stays in staging until Partify maps it to an existing part or creates a new canonical part.'
-                  : `${unmatched} row${unmatched !== 1 ? 's' : ''} couldn&apos;t be matched automatically. Assign them manually below, or approve now to import only the matched rows.`}
+                  : matched > 0
+                    ? `${unmatched} row${unmatched !== 1 ? 's' : ''} could not be matched automatically. Assign them manually below, or approve now to import only the matched rows.`
+                    : `${unmatched} row${unmatched !== 1 ? 's' : ''} could not be matched automatically. Assign them manually below, or reject this import.`}
               </p>
             </div>
           )}
