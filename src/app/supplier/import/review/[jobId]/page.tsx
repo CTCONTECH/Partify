@@ -226,34 +226,40 @@ export default function ImportReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[var(--background)] pb-20">
-        <TopBar title="Review Import" showBack />
-        <div className="p-6 space-y-3 animate-pulse">
+      <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+        <div className="xl:hidden">
+          <TopBar title="Review Import" showBack />
+        </div>
+        <div className="p-6 xl:px-10 xl:py-8 space-y-3 animate-pulse">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-[var(--muted)] rounded-2xl" />
+            <div key={i} className="h-16 bg-[var(--muted)] rounded-2xl xl:rounded-lg" />
           ))}
         </div>
+        <BottomNav role="supplier" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[var(--background)] pb-20">
-        <TopBar title="Review Import" showBack />
-        <div className="p-6">
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+      <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+        <div className="xl:hidden">
+          <TopBar title="Review Import" showBack />
+        </div>
+        <div className="p-6 xl:px-10 xl:py-8">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl xl:rounded-lg p-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{error}</p>
           </div>
         </div>
+        <BottomNav role="supplier" />
       </div>
     );
   }
 
   if (done) {
     return (
-      <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center pb-20 px-6">
+      <div className="min-h-screen bg-[var(--background)] flex flex-col items-center justify-center pb-20 xl:pb-8 xl:pl-64 px-6">
         <CheckCircle2 className="w-16 h-16 text-green-500 mb-4" />
         <h2 className="text-xl font-semibold mb-2">Import approved</h2>
         <p className="text-[var(--muted-foreground)] text-center mb-6">
@@ -262,6 +268,7 @@ export default function ImportReviewPage() {
         <Button variant="primary" onClick={() => router.push('/supplier/inventory')}>
           Back to Inventory
         </Button>
+        <BottomNav role="supplier" />
       </div>
     );
   }
@@ -274,13 +281,30 @@ export default function ImportReviewPage() {
   const displayState = job ? getImportDisplayState(job) : 'needs_review';
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Review Import" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Review Import" showBack />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto space-y-5">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto space-y-5">
+        <div className="hidden xl:flex items-start justify-between gap-6">
+          <div>
+            <button
+              type="button"
+              onClick={() => router.push('/supplier/import')}
+              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--primary)] mb-2"
+            >
+              Back to import
+            </button>
+            <h1 className="text-3xl">Review Import</h1>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Validate matched rows before publishing supplier stock to live inventory.
+            </p>
+          </div>
+        </div>
 
         {/* Summary card */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-3">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 xl:p-5 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">
               {job?.fileName ? job.fileName : `${job?.sourceType ?? 'Import'} job`}
@@ -335,8 +359,14 @@ export default function ImportReviewPage() {
         </div>
 
         {/* Row list */}
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg overflow-hidden">
           <p className="text-sm font-medium px-4 py-3 border-b border-[var(--border)]">Rows</p>
+          <div className="hidden xl:grid grid-cols-[minmax(0,1.5fr)_120px_110px_130px] gap-3 px-4 py-2 bg-[var(--muted)] text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+            <span>Supplier Row</span>
+            <span>Status</span>
+            <span className="text-right">Price</span>
+            <span>Stock</span>
+          </div>
           <div className="divide-y divide-[var(--border)]">
             {rows.map(row => {
               const matchedPart = row.matchedPartId
@@ -347,7 +377,7 @@ export default function ImportReviewPage() {
 
               return (
                 <div key={row.id} className="px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex xl:grid xl:grid-cols-[minmax(0,1.5fr)_120px_110px_130px] items-start xl:items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-mono">{row.rawPartNumber}</p>
                       {matchedPart && (
@@ -374,12 +404,14 @@ export default function ImportReviewPage() {
                         <p className="text-xs text-[var(--muted-foreground)] mt-0.5">{matchReason}</p>
                       )}
                     </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <div className="flex flex-col xl:contents items-end gap-1 flex-shrink-0">
                       <MatchBadge status={row.matchStatus} />
-                      <div className="flex gap-2 text-xs text-[var(--muted-foreground)]">
-                        {row.price !== undefined && <span>R{row.price.toFixed(2)}</span>}
-                        {row.stock !== undefined && <span>{row.stock} qty</span>}
-                      </div>
+                      <span className="text-xs text-[var(--muted-foreground)] xl:text-right">
+                        {row.price !== undefined ? `R${row.price.toFixed(2)}` : '-'}
+                      </span>
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        {row.stock !== undefined ? `${row.stock} qty` : '-'}
+                      </span>
                     </div>
                   </div>
 
@@ -397,7 +429,7 @@ export default function ImportReviewPage() {
 
         {/* Error banner */}
         {error && (
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl xl:rounded-lg p-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{error}</p>
           </div>
@@ -405,7 +437,7 @@ export default function ImportReviewPage() {
 
         {/* Actions */}
         {!isApproved && (
-          <div className="flex gap-3">
+          <div className="flex gap-3 xl:max-w-xl xl:ml-auto">
             <Button
               variant="primary"
               className="flex-1"

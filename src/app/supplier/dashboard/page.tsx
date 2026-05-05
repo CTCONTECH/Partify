@@ -179,17 +179,41 @@ export default function SupplierDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar showLogo showNotifications notificationCount={notificationCount} />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar showLogo showNotifications notificationCount={notificationCount} />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto">
+        <div className="hidden xl:flex items-start justify-between gap-6 mb-6">
+          <div>
+            <p className="text-sm text-[var(--muted-foreground)] mb-1">Supplier Dashboard</p>
+            <h1 className="text-3xl">Workspace Overview</h1>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Manage inventory health, coupon redemptions, and supplier activity.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push('/notifications')}
+            className="relative h-11 px-4 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm hover:bg-[var(--muted)]"
+          >
+            Notifications
+            {notificationCount > 0 && (
+              <span className="ml-2 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-[var(--primary)] px-1.5 text-xs text-white">
+                {notificationCount}
+              </span>
+            )}
+          </button>
+        </div>
+
         {redeemedNotice && (
-          <div className="bg-green-50 border border-green-200 text-green-700 rounded-2xl p-4 mb-6">
+          <div className="bg-green-50 border border-green-200 text-green-700 rounded-2xl xl:rounded-lg p-4 mb-6">
             <p className="text-sm">Coupon redeemed successfully.</p>
           </div>
         )}
 
-        <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl p-6 mb-6 text-white min-h-36">
+        <div className="bg-gradient-to-br from-[var(--primary)] to-[#D84315] rounded-3xl xl:rounded-lg p-6 xl:p-8 mb-6 text-white min-h-36 xl:min-h-44 xl:flex xl:items-center xl:justify-between">
           {loading ? (
             <div className="space-y-3 animate-pulse">
               <div className="h-7 w-36 bg-white/30 rounded" />
@@ -198,25 +222,32 @@ export default function SupplierDashboard() {
             </div>
           ) : (
             <>
-              <h2 className="text-2xl mb-2">{info.businessName}</h2>
-              <p className="text-white/90 mb-4">{info.suburb}, Cape Town</p>
-              <div className="flex items-center gap-2">
+              <div>
+                <h2 className="text-2xl xl:text-4xl mb-2">{info.businessName}</h2>
+                <p className="text-white/90 mb-4 xl:mb-0">{info.suburb}, Cape Town</p>
+              </div>
+              <div className="flex items-center gap-2 xl:self-start">
                 <Badge variant="default" size="sm">{info.active ? 'Active Supplier' : 'Inactive'}</Badge>
               </div>
             </>
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           {statCards.map((stat) => {
             const Icon = stat.icon;
             return (
               <div
                 key={stat.label}
-                className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4"
+                className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 xl:p-5 min-h-32"
               >
-                <div className={`${stat.color} w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>
-                  <Icon className="w-5 h-5" />
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className={`${stat.color} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="hidden xl:inline text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">
+                    Live
+                  </span>
                 </div>
                 {loading ? (
                   <>
@@ -234,87 +265,106 @@ export default function SupplierDashboard() {
           })}
         </div>
 
-        <button
-          onClick={() => router.push('/supplier/redeem')}
-          className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 mb-6 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
-        >
-          <div className="bg-[var(--muted)] p-2 rounded-lg">
-            <ReceiptText className="w-5 h-5 text-[var(--foreground)]" />
-          </div>
-          <div className="flex-1 text-left">
-            <h3 className="text-base mb-1">Redeem Coupon</h3>
-            <p className="text-sm text-[var(--muted-foreground)]">Verify a client code and record the sale</p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => router.push('/supplier/coupons')}
-          className="w-full bg-[var(--card)] border border-[var(--primary)]/30 rounded-2xl p-4 mb-6 flex items-center gap-3 active:bg-[var(--muted)] transition-colors shadow-sm"
-        >
-          <div className="bg-blue-50 p-2 rounded-lg">
-            <BarChart3 className="w-5 h-5 text-blue-700" />
-          </div>
-          <div className="flex-1 text-left">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-base">Sales Insights</h3>
-              <Badge variant="warning" size="sm">Pro</Badge>
-            </div>
-            <p className="text-sm text-[var(--muted-foreground)]">Track coupon demand, redemptions, and value</p>
-          </div>
-        </button>
-
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg">Recent Activity</h3>
-          <button
-            onClick={() => router.push('/supplier/activity')}
-            className="text-sm text-[var(--primary)] underline"
-          >
-            View All
-          </button>
-        </div>
-
-        <div className="space-y-3">
-          {loading && (
-            <>
-              {[...Array(3)].map((_, index) => (
-                <div
-                  key={index}
-                  className="h-20 bg-[var(--muted)] rounded-2xl animate-pulse"
-                />
-              ))}
-            </>
-          )}
-
-          {!loading && recentActivity.map((activity) => (
-            <div
-              key={activity.id}
-              className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <h4 className="text-base mb-1">{activity.title}</h4>
-                  {activity.type === 'update' && (
-                    <p className="text-sm text-[var(--success)]">{activity.detail}</p>
-                  )}
-                  {activity.type === 'import' && (
-                    <p className="text-sm text-[var(--info)]">{activity.detail}</p>
-                  )}
-                  {activity.type === 'lowstock' && (
-                    <Badge variant="low-stock" size="sm">{activity.detail}</Badge>
-                  )}
+        <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_420px] xl:gap-6">
+          <div>
+            <div className="xl:bg-[var(--card)] xl:border xl:border-[var(--border)] xl:rounded-lg xl:p-5 xl:mb-6">
+              <div className="hidden xl:flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-xl">Priority Actions</h2>
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    Fast access to the work suppliers do throughout the day.
+                  </p>
                 </div>
-                <p className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">{activity.time}</p>
+              </div>
+
+              <div className="xl:grid xl:grid-cols-2 xl:gap-4">
+                <button
+                  onClick={() => router.push('/supplier/redeem')}
+                  className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 mb-6 xl:mb-0 flex items-center gap-3 active:bg-[var(--muted)] transition-colors xl:hover:bg-[var(--muted)]"
+                >
+                  <div className="bg-[var(--muted)] p-2 rounded-lg">
+                    <ReceiptText className="w-5 h-5 text-[var(--foreground)]" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h3 className="text-base mb-1">Redeem Coupon</h3>
+                    <p className="text-sm text-[var(--muted-foreground)]">Verify a client code and record the sale</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => router.push('/supplier/coupons')}
+                  className="w-full bg-[var(--card)] border border-[var(--primary)]/30 rounded-2xl xl:rounded-lg p-4 mb-6 xl:mb-0 flex items-center gap-3 active:bg-[var(--muted)] transition-colors shadow-sm xl:hover:bg-blue-50"
+                >
+                  <div className="bg-blue-50 p-2 rounded-lg">
+                    <BarChart3 className="w-5 h-5 text-blue-700" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-base">Sales Insights</h3>
+                      <Badge variant="warning" size="sm">Pro</Badge>
+                    </div>
+                    <p className="text-sm text-[var(--muted-foreground)]">Track coupon demand, redemptions, and value</p>
+                  </div>
+                </button>
               </div>
             </div>
-          ))}
+          </div>
 
-          {!loading && recentActivity.length === 0 && (
-            <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
-              <p className="text-sm text-[var(--muted-foreground)]">
-                No recent supplier activity yet.
-              </p>
+          <div className="xl:bg-[var(--card)] xl:border xl:border-[var(--border)] xl:rounded-lg xl:p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg xl:text-xl">Recent Activity</h3>
+              <button
+                onClick={() => router.push('/supplier/activity')}
+                className="text-sm text-[var(--primary)] underline"
+              >
+                View All
+              </button>
             </div>
-          )}
+
+            <div className="space-y-3">
+              {loading && (
+                <>
+                  {[...Array(3)].map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-20 bg-[var(--muted)] rounded-2xl xl:rounded-lg animate-pulse"
+                    />
+                  ))}
+                </>
+              )}
+
+              {!loading && recentActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <h4 className="text-base mb-1">{activity.title}</h4>
+                      {activity.type === 'update' && (
+                        <p className="text-sm text-[var(--success)]">{activity.detail}</p>
+                      )}
+                      {activity.type === 'import' && (
+                        <p className="text-sm text-[var(--info)]">{activity.detail}</p>
+                      )}
+                      {activity.type === 'lowstock' && (
+                        <Badge variant="low-stock" size="sm">{activity.detail}</Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-[var(--muted-foreground)] whitespace-nowrap">{activity.time}</p>
+                  </div>
+                </div>
+              ))}
+
+              {!loading && recentActivity.length === 0 && (
+                <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4">
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    No recent supplier activity yet.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -282,7 +282,7 @@ export default function SupplierRedeemPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center p-6 xl:pl-64">
         <div className="max-w-sm w-full text-center">
           <div className="w-16 h-16 rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-9 h-9 text-green-700" />
@@ -292,16 +292,29 @@ export default function SupplierRedeemPage() {
             The sale has been recorded for supplier reporting.
           </p>
         </div>
+        <BottomNav role="supplier" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Redeem Coupon" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Redeem Coupon" showBack />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto space-y-5">
-        <form onSubmit={handleLookup} className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-4">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto space-y-5">
+        <div className="hidden xl:block">
+          <p className="text-sm text-[var(--muted-foreground)] mb-1">Supplier Checkout</p>
+          <h1 className="text-3xl">Redeem Coupon</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Verify a client coupon code or scan the QR before completing the sale.
+          </p>
+        </div>
+
+        <div className="xl:grid xl:grid-cols-[420px_minmax(0,1fr)] xl:gap-6 xl:items-start">
+          <div className="space-y-5">
+        <form onSubmit={handleLookup} className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 xl:p-5 space-y-4">
           <div className="flex items-center gap-3">
             <div className="bg-[var(--muted)] p-2 rounded-lg">
               <ReceiptText className="w-5 h-5 text-[var(--foreground)]" />
@@ -339,7 +352,7 @@ export default function SupplierRedeemPage() {
         </form>
 
         {scanning && (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-3">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base">Scan Client Coupon</h3>
               <button
@@ -364,21 +377,22 @@ export default function SupplierRedeemPage() {
         )}
 
         {error && (
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl xl:rounded-lg p-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="flex items-start gap-2 text-green-700 bg-green-50 border border-green-200 rounded-2xl p-4">
+          <div className="flex items-start gap-2 text-green-700 bg-green-50 border border-green-200 rounded-2xl xl:rounded-lg p-4">
             <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{success}</p>
           </div>
         )}
+          </div>
 
         {lookup && (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 space-y-4">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 xl:p-5 space-y-4 mt-5 xl:mt-0">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm text-[var(--muted-foreground)]">{lookup.partNumber}</p>
@@ -427,6 +441,19 @@ export default function SupplierRedeemPage() {
             </div>
           </div>
         )}
+
+        {!lookup && (
+          <div className="hidden xl:flex min-h-72 bg-[var(--card)] border border-[var(--border)] rounded-lg p-8 items-center justify-center text-center">
+            <div className="max-w-sm">
+              <ShieldCheck className="w-10 h-10 mx-auto text-[var(--muted-foreground)] mb-3" />
+              <h2 className="text-xl mb-2">Ready to verify</h2>
+              <p className="text-sm text-[var(--muted-foreground)]">
+                Coupon details will appear here after a valid client code is checked or scanned.
+              </p>
+            </div>
+          </div>
+        )}
+        </div>
       </div>
 
       <BottomNav role="supplier" />

@@ -265,11 +265,31 @@ export default function SupplierImportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Import Inventory" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Import Inventory" showBack />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto space-y-6">
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto space-y-6">
+        <div className="hidden xl:flex items-start justify-between gap-6">
+          <div>
+            <button
+              type="button"
+              onClick={() => router.push('/supplier/inventory')}
+              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--primary)] mb-2"
+            >
+              Back to inventory
+            </button>
+            <h1 className="text-3xl">Import Inventory</h1>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Upload supplier stock files into a staged review before publishing to live inventory.
+            </p>
+          </div>
+        </div>
+
+        <div className="xl:grid xl:grid-cols-[360px_minmax(0,1fr)] xl:gap-6 xl:items-start">
+          <div className="space-y-6">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4">
           <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" />
             <div>
@@ -282,53 +302,57 @@ export default function SupplierImportPage() {
               </p>
             </div>
           </div>
-        </div>
-
-        <div
-          className="border-2 border-dashed border-[var(--border)] rounded-2xl p-8 text-center cursor-pointer hover:border-[var(--primary)] transition-colors"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          {fileName ? (
-            <div className="flex items-center justify-center gap-3">
-              <FileText className="w-5 h-5 text-[var(--primary)]" />
-              <span className="text-sm font-medium">{fileName}</span>
-              <button
-                onClick={(event) => {
-                  event.stopPropagation();
-                  clearFile();
-                }}
-                className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
-          ) : (
-            <>
-              <Upload className="w-8 h-8 text-[var(--muted-foreground)] mx-auto mb-2" />
-              <p className="text-sm font-medium">Tap to select a CSV file</p>
-              <p className="text-xs text-[var(--muted-foreground)] mt-1">
-                Supported: .csv, .txt
-              </p>
-            </>
-          )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,.txt,text/csv,text/plain"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-        </div>
+
+            <div
+              className="border-2 border-dashed border-[var(--border)] rounded-2xl xl:rounded-lg p-8 xl:min-h-64 text-center cursor-pointer hover:border-[var(--primary)] transition-colors xl:flex xl:flex-col xl:items-center xl:justify-center"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {fileName ? (
+                <div className="flex items-center justify-center gap-3">
+                  <FileText className="w-5 h-5 text-[var(--primary)]" />
+                  <span className="text-sm font-medium">{fileName}</span>
+                  <button
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      clearFile();
+                    }}
+                    className="text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                    aria-label="Remove selected file"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 text-[var(--muted-foreground)] mx-auto mb-2" />
+                  <p className="text-sm font-medium">Tap to select a CSV file</p>
+                  <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                    Supported: .csv, .txt
+                  </p>
+                </>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.txt,text/csv,text/plain"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-6 mt-6 xl:mt-0">
 
         {parseError && (
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl xl:rounded-lg p-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{parseError}</p>
           </div>
         )}
 
         {parsedRows.length > 0 && (
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
               <p className="text-sm font-medium">Preview</p>
               <div className="flex gap-2">
@@ -341,9 +365,16 @@ export default function SupplierImportPage() {
               </div>
             </div>
 
-            <div className="divide-y divide-[var(--border)] max-h-72 overflow-y-auto">
+            <div className="hidden xl:grid grid-cols-[minmax(0,1fr)_120px_90px_80px] gap-3 px-4 py-2 bg-[var(--muted)] text-xs uppercase tracking-wide text-[var(--muted-foreground)]">
+              <span>Part</span>
+              <span className="text-right">Price</span>
+              <span>Stock</span>
+              <span>Status</span>
+            </div>
+
+            <div className="divide-y divide-[var(--border)] max-h-72 xl:max-h-[520px] overflow-y-auto">
               {parsedRows.slice(0, 50).map((row, idx) => (
-                <div key={idx} className="px-4 py-2.5 flex items-start justify-between gap-3">
+                <div key={idx} className="px-4 py-2.5 flex xl:grid xl:grid-cols-[minmax(0,1fr)_120px_90px_80px] items-start xl:items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-mono truncate ${row._error ? 'text-red-500' : ''}`}>
                       {row.rawPartNumber || <span className="text-[var(--muted-foreground)]">(empty)</span>}
@@ -355,13 +386,15 @@ export default function SupplierImportPage() {
                       <p className="text-xs text-red-500">{row._error}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0 text-xs text-[var(--muted-foreground)]">
-                    {row.price !== undefined && <span>R{row.price.toFixed(2)}</span>}
-                    {row.stock !== undefined && <span>{row.stock} qty</span>}
-                    {row._error
-                      ? <AlertCircle className="w-4 h-4 text-red-400" />
-                      : <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    }
+                  <div className="flex items-center gap-3 xl:contents flex-shrink-0 text-xs text-[var(--muted-foreground)]">
+                    <span className="xl:text-right">{row.price !== undefined ? `R${row.price.toFixed(2)}` : '-'}</span>
+                    <span>{row.stock !== undefined ? `${row.stock} qty` : '-'}</span>
+                    <span>
+                      {row._error
+                        ? <AlertCircle className="w-4 h-4 text-red-400" />
+                        : <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      }
+                    </span>
                   </div>
                 </div>
               ))}
@@ -375,7 +408,7 @@ export default function SupplierImportPage() {
         )}
 
         {submitError && (
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl xl:rounded-lg p-4">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{submitError}</p>
           </div>
@@ -394,6 +427,8 @@ export default function SupplierImportPage() {
             }
           </Button>
         )}
+          </div>
+        </div>
       </div>
 
       <BottomNav role="supplier" />

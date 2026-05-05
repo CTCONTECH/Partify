@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 interface PartifyLogoProps {
   variant?: 'icon' | 'horizontal' | 'stacked';
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -11,6 +13,11 @@ export function PartifyLogo({
   theme = 'color',
   className = ''
 }: PartifyLogoProps) {
+  const id = useId().replace(/:/g, '');
+  const iconGradientId = `partify-gradient-${id}`;
+  const horizontalGradientId = `partify-gradient-h-${id}`;
+  const stackedGradientId = `partify-gradient-s-${id}`;
+
   // Consistent size system:
   // sm (18-20px): Compact contexts
   // md (22-26px): Top navigation bars
@@ -61,7 +68,7 @@ export function PartifyLogo({
         aria-label="Partify"
       >
         <defs>
-          <linearGradient id="partify-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={iconGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={colors.primary} />
             <stop offset="100%" stopColor={colors.secondary} />
           </linearGradient>
@@ -70,7 +77,7 @@ export function PartifyLogo({
         {/* Location Pin Shape */}
         <path
           d="M50 10 C65 10, 75 20, 75 35 C75 55, 50 85, 50 85 C50 85, 25 55, 25 35 C25 20, 35 10, 50 10 Z"
-          fill={theme === 'color' ? 'url(#partify-gradient)' : colors.primary}
+          fill={theme === 'color' ? `url(#${iconGradientId})` : colors.primary}
         />
 
         {/* "P" Letter Inside */}
@@ -96,14 +103,14 @@ export function PartifyLogo({
           className="h-full w-auto"
         >
           <defs>
-            <linearGradient id="partify-gradient-h" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient id={horizontalGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor={colors.primary} />
               <stop offset="100%" stopColor={colors.secondary} />
             </linearGradient>
           </defs>
           <path
             d="M50 10 C65 10, 75 20, 75 35 C75 55, 50 85, 50 85 C50 85, 25 55, 25 35 C25 20, 35 10, 50 10 Z"
-            fill={theme === 'color' ? 'url(#partify-gradient-h)' : colors.primary}
+            fill={theme === 'color' ? `url(#${horizontalGradientId})` : colors.primary}
           />
           <path
             d="M42 28 L50 28 C56 28, 60 32, 60 38 C60 44, 56 48, 50 48 L45 48 L45 58 L42 58 Z M45 31 L45 45 L50 45 C54 45, 57 42, 57 38 C57 34, 54 31, 50 31 Z"
@@ -135,14 +142,14 @@ export function PartifyLogo({
         className="h-2/3 w-auto"
       >
         <defs>
-          <linearGradient id="partify-gradient-s" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={stackedGradientId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor={colors.primary} />
             <stop offset="100%" stopColor={colors.secondary} />
           </linearGradient>
         </defs>
         <path
           d="M50 10 C65 10, 75 20, 75 35 C75 55, 50 85, 50 85 C50 85, 25 55, 25 35 C25 20, 35 10, 50 10 Z"
-          fill={theme === 'color' ? 'url(#partify-gradient-s)' : colors.primary}
+          fill={theme === 'color' ? `url(#${stackedGradientId})` : colors.primary}
         />
         <path
           d="M42 28 L50 28 C56 28, 60 32, 60 38 C60 44, 56 48, 50 48 L45 48 L45 58 L42 58 Z M45 31 L45 45 L50 45 C54 45, 57 42, 57 38 C57 34, 54 31, 50 31 Z"

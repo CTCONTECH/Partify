@@ -406,18 +406,40 @@ export default function SupplierCouponsPage() {
   const ledgerEnd = Math.min(safeLedgerPage * PAGE_SIZE, filteredCoupons.length);
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Sales Insights" showBack />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Sales Insights" showBack />
+      </div>
 
-      <div className="p-6 max-w-3xl mx-auto space-y-6">
-        <div className="bg-[var(--card)] border border-[var(--primary)]/30 rounded-2xl p-5">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto space-y-6">
+        <div className="hidden xl:flex items-center justify-between gap-6">
+          <div>
+            <button
+              type="button"
+              onClick={() => router.push('/supplier/dashboard')}
+              className="text-sm text-[var(--muted-foreground)] hover:text-[var(--primary)] mb-2"
+            >
+              Back to dashboard
+            </button>
+            <h1 className="text-3xl">Sales Insights</h1>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Monitor coupon-driven demand, redemptions, and tracked sales value.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="info" size="sm">Business Insights</Badge>
+            <Badge variant="warning" size="sm">Pro</Badge>
+          </div>
+        </div>
+
+        <div className="bg-[var(--card)] border border-[var(--primary)]/30 rounded-2xl lg:rounded-lg p-5 lg:p-6 xl:hidden">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="info" size="sm">Business Insights</Badge>
                 <Badge variant="warning" size="sm">Pro</Badge>
               </div>
-              <h1 className="text-2xl mb-2">Sales Insights</h1>
+              <h2 className="text-2xl mb-2">Sales Insights</h2>
               <p className="text-sm text-[var(--muted-foreground)]">
                 Track Partify coupon demand, redemptions, and sales value for your store.
               </p>
@@ -435,7 +457,7 @@ export default function SupplierCouponsPage() {
           </div>
         )}
 
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl lg:rounded-lg p-4 lg:p-5">
           <div className="flex items-center gap-2 mb-4">
             <CalendarDays className="w-5 h-5 text-[var(--foreground)]" />
             <h2 className="text-lg">Date Range</h2>
@@ -493,7 +515,7 @@ export default function SupplierCouponsPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
           {[
             { label: 'Active Coupons', value: analytics.active.toLocaleString(), icon: Ticket, tone: 'bg-orange-50 text-orange-700' },
             { label: 'Redeemed', value: analytics.redeemedCount.toLocaleString(), icon: CheckCircle2, tone: 'bg-green-50 text-green-700' },
@@ -504,7 +526,7 @@ export default function SupplierCouponsPage() {
           ].map((metric) => {
             const Icon = metric.icon;
             return (
-              <div key={metric.label} className={`${DASHBOARD_PANEL_CLASS} p-4 min-h-28 relative overflow-hidden`}>
+              <div key={metric.label} className={`${DASHBOARD_PANEL_CLASS} p-4 min-h-28 lg:min-h-32 relative overflow-hidden`}>
                 <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-green-500 to-blue-600" />
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className={`${metric.tone} w-10 h-10 rounded-lg flex items-center justify-center`}>
@@ -537,7 +559,7 @@ export default function SupplierCouponsPage() {
               </div>
               <span className="text-xs text-[var(--muted-foreground)]">{selectedRange.label}</span>
             </div>
-            <div className="h-64">
+            <div className="h-64 lg:h-80">
               {loading ? (
                 <div className="h-full bg-[var(--muted)] rounded-xl animate-pulse" />
               ) : (
@@ -577,7 +599,7 @@ export default function SupplierCouponsPage() {
               <BarChart3 className="w-5 h-5 text-[var(--foreground)]" />
               <h2 className="text-lg">Coupon Funnel</h2>
             </div>
-            <div className="h-64">
+            <div className="h-64 lg:h-80">
               {loading ? (
                 <div className="h-full bg-[var(--muted)] rounded-xl animate-pulse" />
               ) : (
@@ -605,7 +627,7 @@ export default function SupplierCouponsPage() {
               <CalendarDays className="w-5 h-5 text-green-700" />
               <h2 className="text-lg">Redeemed Value</h2>
             </div>
-            <div className="h-56">
+            <div className="h-56 lg:h-72">
               {loading ? (
                 <div className="h-full bg-[var(--muted)] rounded-xl animate-pulse" />
               ) : (
@@ -627,7 +649,7 @@ export default function SupplierCouponsPage() {
               <Gauge className="w-5 h-5 text-slate-700" />
               <h2 className="text-lg">Sales Mix</h2>
             </div>
-            <div className="h-56">
+            <div className="h-56 lg:h-72">
               {loading ? (
                 <div className="h-full bg-[var(--muted)] rounded-xl animate-pulse" />
               ) : mixData.length === 0 ? (
@@ -676,7 +698,7 @@ export default function SupplierCouponsPage() {
           </div>
         </div>
 
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl lg:rounded-lg p-4 lg:p-5">
           <div className="flex items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
               <ReceiptText className="w-5 h-5 text-[var(--foreground)]" />

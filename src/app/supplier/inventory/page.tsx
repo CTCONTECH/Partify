@@ -105,43 +105,99 @@ export default function SupplierInventory() {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Inventory" />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Inventory" />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="sticky top-0 z-10 bg-[var(--background)] pt-2 pb-4 -mx-6 px-6 mb-2">
-          <SearchBar
-            placeholder="Search inventory..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setVisibleCount(PAGE_SIZE);
-            }}
-            onClear={() => {
-              setSearchQuery('');
-              setVisibleCount(PAGE_SIZE);
-            }}
-            showClear={searchQuery.length > 0}
-          />
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto">
+        <div className="hidden xl:flex items-start justify-between gap-6 mb-6">
+          <div>
+            <p className="text-sm text-[var(--muted-foreground)] mb-1">Supplier Inventory</p>
+            <h1 className="text-3xl">Inventory Management</h1>
+            <p className="text-sm text-[var(--muted-foreground)]">
+              Search, review, and update live stock and pricing.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/supplier/requests')}
+              className="h-11 px-4 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm hover:bg-[var(--muted)]"
+            >
+              Requests
+            </button>
+            <button
+              onClick={() => router.push('/supplier/import')}
+              className="h-11 px-4 rounded-lg bg-[var(--primary)] text-white text-sm hover:opacity-95"
+            >
+              Import CSV
+            </button>
+            <button
+              onClick={() => router.push('/supplier/add-part')}
+              className="h-11 px-4 rounded-lg border border-[var(--border)] bg-[var(--card)] text-sm hover:bg-[var(--muted)]"
+            >
+              Add Part
+            </button>
+          </div>
+        </div>
 
-          <div className="flex gap-2 overflow-x-auto pt-3 pb-1">
-            {filterOptions.map(option => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  setStatusFilter(option.value);
+        <div className="xl:bg-[var(--card)] xl:border xl:border-[var(--border)] xl:rounded-lg xl:p-5 xl:mb-5">
+          <div className="sticky top-0 z-10 bg-[var(--background)] xl:bg-transparent pt-2 xl:pt-0 pb-4 xl:pb-0 -mx-6 xl:mx-0 px-6 xl:px-0 mb-2 xl:mb-0">
+            <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_220px] xl:gap-4 xl:items-end">
+              <SearchBar
+                placeholder="Search inventory..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
                   setVisibleCount(PAGE_SIZE);
                 }}
-                className={`h-9 px-4 rounded-full border text-sm whitespace-nowrap transition-colors ${
-                  statusFilter === option.value
-                    ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                    : 'bg-[var(--card)] text-[var(--foreground)] border-[var(--border)]'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+                onClear={() => {
+                  setSearchQuery('');
+                  setVisibleCount(PAGE_SIZE);
+                }}
+                showClear={searchQuery.length > 0}
+              />
+
+              <div className="hidden xl:block">
+                <label className="block text-sm text-[var(--muted-foreground)] mb-1" htmlFor="inventory-sort-desktop">
+                  Sort
+                </label>
+                <select
+                  id="inventory-sort-desktop"
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value as SortOption);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
+                  className="h-11 w-full bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 text-sm text-[var(--foreground)]"
+                >
+                  <option value="updated">Recently updated</option>
+                  <option value="part-number">Part number</option>
+                  <option value="stock">Stock low-high</option>
+                  <option value="price">Price low-high</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto pt-3 pb-1">
+              {filterOptions.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(option.value);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
+                  className={`h-9 px-4 rounded-full border text-sm whitespace-nowrap transition-colors ${
+                    statusFilter === option.value
+                      ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
+                      : 'bg-[var(--card)] text-[var(--foreground)] border-[var(--border)]'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -149,7 +205,7 @@ export default function SupplierInventory() {
           <p className="text-sm text-[var(--muted-foreground)]">
             {filteredInventory.length} item{filteredInventory.length === 1 ? '' : 's'}
           </p>
-          <div className="flex flex-wrap justify-end gap-x-3 gap-y-2">
+          <div className="flex flex-wrap justify-end gap-x-3 gap-y-2 xl:hidden">
             <button
               onClick={() => router.push('/supplier/requests')}
               className="text-sm text-[var(--primary)] underline"
@@ -171,7 +227,7 @@ export default function SupplierInventory() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4 xl:hidden">
           <SlidersHorizontal className="w-4 h-4 text-[var(--muted-foreground)]" />
           <label className="text-sm text-[var(--muted-foreground)]" htmlFor="inventory-sort">
             Sort
@@ -207,14 +263,23 @@ export default function SupplierInventory() {
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="hidden xl:grid grid-cols-[minmax(0,1.5fr)_160px_130px_140px_120px_32px] gap-3 px-4 py-3 text-xs uppercase tracking-wide text-[var(--muted-foreground)] border border-[var(--border)] border-b-0 rounded-t-lg bg-[var(--muted)]">
+          <span>Part</span>
+          <span>Category</span>
+          <span className="text-right">Price</span>
+          <span>Stock</span>
+          <span>Updated</span>
+          <span />
+        </div>
+
+        <div className="space-y-2 xl:space-y-0 xl:border xl:border-[var(--border)] xl:rounded-b-lg xl:overflow-hidden xl:bg-[var(--card)]">
           {!loading && visibleInventory.map((item) => (
             <button
               key={item.partId}
               onClick={() => router.push(`/supplier/edit-item/${item.partId}`)}
-              className="w-full bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-left active:bg-[var(--muted)] transition-colors"
+              className="w-full bg-[var(--card)] border border-[var(--border)] xl:border-0 xl:border-b xl:last:border-b-0 rounded-xl xl:rounded-none p-4 text-left active:bg-[var(--muted)] xl:hover:bg-[var(--muted)] transition-colors"
             >
-              <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_120px_110px_110px_28px] items-center gap-3">
+              <div className="grid grid-cols-[1fr_auto] md:grid-cols-[1fr_120px_110px_110px_28px] xl:grid-cols-[minmax(0,1.5fr)_160px_130px_140px_120px_32px] items-center gap-3">
                 <div className="min-w-0">
                   <p className="text-xs text-[var(--muted-foreground)] mb-1">
                     Part #{item.partNumber}
@@ -227,21 +292,25 @@ export default function SupplierInventory() {
                   )}
                 </div>
 
-                <p className="text-base text-[var(--primary)] text-right md:order-3">
+                <p className="text-xs text-[var(--muted-foreground)] hidden xl:block">
+                  {item.category || 'Uncategorised'}
+                </p>
+
+                <p className="text-base text-[var(--primary)] text-right md:order-3 xl:order-none">
                   R {item.price.toFixed(2)}
                 </p>
 
-                <div className="flex items-center gap-2 md:order-2">
+                <div className="flex items-center gap-2 md:order-2 xl:order-none">
                   <Badge variant={getStockStatus(item.stock)} size="sm">
                     {item.stock} in stock
                   </Badge>
                 </div>
 
-                <span className="text-xs text-[var(--muted-foreground)] md:order-4">
+                <span className="text-xs text-[var(--muted-foreground)] md:order-4 xl:order-none">
                   Updated {item.lastUpdated}
                 </span>
 
-                <ChevronRight className="w-5 h-5 text-[var(--muted-foreground)] hidden md:block md:order-5" />
+                <ChevronRight className="w-5 h-5 text-[var(--muted-foreground)] hidden md:block md:order-5 xl:order-none" />
               </div>
             </button>
           ))}

@@ -110,11 +110,22 @@ export default function SupplierProfile() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
-      <TopBar title="Profile" />
+    <div className="min-h-screen bg-[var(--background)] pb-20 xl:pb-8 xl:pl-64">
+      <div className="xl:hidden">
+        <TopBar title="Profile" />
+      </div>
 
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl p-6 mb-6 text-center">
+      <div className="p-6 xl:px-10 xl:py-8 max-w-7xl mx-auto">
+        <div className="hidden xl:block mb-6">
+          <p className="text-sm text-[var(--muted-foreground)] mb-1">Supplier Account</p>
+          <h1 className="text-3xl">Profile</h1>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            Manage account access, business details, notifications, and support.
+          </p>
+        </div>
+
+        <div className="xl:grid xl:grid-cols-[380px_minmax(0,1fr)] xl:gap-6 xl:items-start">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-3xl xl:rounded-lg p-6 mb-6 xl:mb-0 text-center">
           <SupplierProfileMark />
           <h2 className="text-xl mb-1">{loading ? 'Loading...' : profile.businessName}</h2>
           {profile.email && (
@@ -129,19 +140,21 @@ export default function SupplierProfile() {
           {profile.address && (
             <p className="text-xs text-[var(--muted-foreground)] mt-2">{profile.address}</p>
           )}
-        </div>
+          </div>
+
+          <div>
 
         {error && (
-          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl p-4 mb-6">
+          <div className="flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-2xl xl:rounded-lg p-4 mb-6">
             <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{error}</p>
           </div>
         )}
 
-        <div className="space-y-3 mb-6">
+        <div className="space-y-3 xl:grid xl:grid-cols-2 xl:gap-4 xl:space-y-0 mb-6">
           <button
             onClick={() => router.push('/supplier/business-details')}
-            className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
+            className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 flex items-center gap-3 active:bg-[var(--muted)] xl:hover:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">
               <Store className="w-5 h-5 text-[var(--foreground)]" />
@@ -157,7 +170,7 @@ export default function SupplierProfile() {
 
           <button
             onClick={() => router.push('/notifications')}
-            className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
+            className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 flex items-center gap-3 active:bg-[var(--muted)] xl:hover:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">
               <Bell className="w-5 h-5 text-[var(--foreground)]" />
@@ -170,7 +183,7 @@ export default function SupplierProfile() {
 
           <button
             onClick={() => router.push('/supplier/help')}
-            className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 flex items-center gap-3 active:bg-[var(--muted)] transition-colors"
+            className="w-full bg-[var(--card)] border border-[var(--border)] rounded-2xl xl:rounded-lg p-4 flex items-center gap-3 active:bg-[var(--muted)] xl:hover:bg-[var(--muted)] transition-colors"
           >
             <div className="bg-[var(--muted)] p-2 rounded-lg">
               <HelpCircle className="w-5 h-5 text-[var(--foreground)]" />
@@ -190,6 +203,8 @@ export default function SupplierProfile() {
           <LogOut className="w-5 h-5 mr-2" />
           Log Out
         </Button>
+          </div>
+        </div>
       </div>
 
       <BottomNav role="supplier" />
