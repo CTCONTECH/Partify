@@ -120,7 +120,7 @@ export function BottomNav({ role }: BottomNavProps) {
         </aside>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-[var(--card)] border-t border-[var(--border)] safe-area-inset-bottom xl:hidden">
+      <nav className={`fixed bottom-0 left-0 right-0 bg-[var(--card)] border-t border-[var(--border)] safe-area-inset-bottom ${role === 'supplier' ? 'xl:hidden' : ''}`}>
         <div className="flex items-center justify-around h-16 max-w-2xl mx-auto px-4">
         {items.map((item) => {
           const Icon = item.icon;
