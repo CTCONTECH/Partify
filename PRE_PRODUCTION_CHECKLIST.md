@@ -101,11 +101,11 @@ Supplier import QA after remaining hardening:
 
 - [x] Local build passes.
 - [x] Lint passes with warnings only.
-- [ ] Add GitHub Actions for lint/build.
+- [x] Add GitHub Actions for lint/build.
 - [ ] Add Sentry or equivalent error monitoring.
-- [ ] Add smoke tests for auth, supplier import, client search, and coupon issue.
-- [ ] Define Supabase backup/restore process.
-- [ ] Define Netlify rollback process.
+- [x] Add smoke tests for auth, supplier import, client search, and coupon issue.
+- [x] Define Supabase backup/restore process.
+- [x] Define Netlify rollback process.
 - [ ] Resolve or intentionally document remaining lint warnings.
 
 ## P1 - Launch Data
